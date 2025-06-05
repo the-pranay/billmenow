@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database';
-import Invoice from '../../../lib/models/Invoice';
-import Payment from '../../../lib/models/Payment';
-import User from '../../../lib/models/User';
+import { connectToDatabase } from '../../../lib/database.js';
+import Invoice from '../../../lib/models/Invoice.js';
+import Payment from '../../../lib/models/Payment.js';
+import User from '../../../lib/models/User.js';
 import crypto from 'crypto';
 
 export async function POST(request) {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database';
-import User from '../../../lib/models/User';
-import { generateResetToken } from '../../../lib/auth';
+import { connectToDatabase } from '../../../lib/database.js';
+import User from '../../../lib/models/User.js';
+import { generateResetToken } from '../../../lib/auth.js';
 import crypto from 'crypto';
 
 export async function POST(request) {

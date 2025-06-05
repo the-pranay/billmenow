@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
-import { connectToDatabase } from '../../lib/database.js';
-import User from '../../lib/models/User.js';
+import { connectToDatabase } from '../../../lib/database.js';
+import User from '../../../lib/models/User.js';
 
 export async function GET(request) {
   try {

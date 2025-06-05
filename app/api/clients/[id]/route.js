@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database';
-import Client from '../../../lib/models/Client';
-import Invoice from '../../../lib/models/Invoice';
-import { withAuth } from '../../../lib/middleware';
+import { connectToDatabase } from '../../../lib/database.js';
+import Client from '../../../lib/models/Client.js';
+import Invoice from '../../../lib/models/Invoice.js';
+import { withAuth } from '../../../lib/middleware.js';
 
 // GET - Fetch a specific client
 export async function GET(request, { params }) {

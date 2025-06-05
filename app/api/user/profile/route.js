@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database';
-import User from '../../../lib/models/User';
-import { withAuth } from '../../../lib/middleware';
-import { hashPassword } from '../../../lib/auth';
+import { connectToDatabase } from '../../../lib/database.js';
+import User from '../../../lib/models/User.js';
+import { withAuth } from '../../../lib/middleware.js';
+import { hashPassword } from '../../../lib/auth.js';
 
 // GET - Get user profile
 export async function GET(request) {

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database';
-import Invoice from '../../../lib/models/Invoice';
-import Payment from '../../../lib/models/Payment';
-import { withAuth } from '../../../lib/middleware';
+import { connectToDatabase } from '../../../lib/database.js';
+import Invoice from '../../../lib/models/Invoice.js';
+import Payment from '../../../lib/models/Payment.js';
+import { withAuth } from '../../../lib/middleware.js';
 
 // In production, uncomment this to use actual Razorpay SDK
 // const Razorpay = require('razorpay');
