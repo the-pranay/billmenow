@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '../../../lib/database';
+import User from '../../../lib/models/User';
+import { generateResetToken } from '../../../lib/auth';
+import crypto from 'crypto';
 
 export async function POST(request) {
   try {
+    await connectToDatabase();
+    
     const { email } = await request.json();
 
     // Basic validation
@@ -12,21 +18,45 @@ export async function POST(request) {
       );
     }
 
-    // In production, you would:
-    // 1. Check if email exists in database
-    // 2. Generate a secure reset token
-    // 3. Send email with reset link
-    // 4. Store token with expiration in database
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Please provide a valid email address' },
+        { status: 400 }
+      );
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    // Always return success to prevent email enumeration
+    const successResponse = {
+      success: true,
+      message: 'If an account with this email exists, a password reset link has been sent.'
+    };
+
+    if (!user) {
+      return NextResponse.json(successResponse);
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
+
+    // Save reset token to user
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetTokenExpiry;
+    await user.save();
+
+    // TODO: Send email with reset link
+    // const resetUrl = `${process.env.NEXTAUTH_URL}/auth/reset-password?token=${resetToken}`;
+    // await sendPasswordResetEmail(user.email, resetUrl);
 
     console.log(`Password reset requested for: ${email}`);
+    console.log(`Reset token: ${resetToken}`); // Remove in production
 
-    // Simulate email sending delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    return NextResponse.json({
-      success: true,
-      message: 'Password reset email sent successfully'
-    });
+    return NextResponse.json(successResponse);
 
   } catch (error) {
     console.error('Forgot password error:', error);

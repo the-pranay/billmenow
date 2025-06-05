@@ -1,34 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { connectToDatabase } from '../../../lib/database';
+import User from '../../../lib/models/User';
+import Invoice from '../../../lib/models/Invoice';
+import { withAuth } from '../../../lib/middleware';
+import nodemailer from 'nodemailer';
 
 // Mock email service - replace with actual email provider (SendGrid, Mailgun, etc.)
 export async function POST(request) {
-  try {
-    const { to, subject, template, templateData, type } = await request.json();
+  return withAuth(async (request, user) => {
+    try {
+      await connectToDatabase();
 
-    // Validate required fields
-    if (!to || !subject || !template || !templateData) {
-      return NextResponse.json({
-        success: false,
-        message: 'Missing required fields: to, subject, template, templateData'
-      }, { status: 400 });
-    }
+      const { to, subject, template, templateData, type, invoiceId } = await request.json();
 
-    // Email templates with placeholders
-    const emailTemplates = {
-      invoice: {
-        subject: 'Invoice #{invoiceNumber} from {businessName}',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #2563eb;">Invoice #{invoiceNumber}</h2>
-            <p>Dear {clientName},</p>
-            <p>Please find attached invoice #{invoiceNumber} for the services provided.</p>
-            
-            <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
-              <h3>Invoice Details:</h3>
-              <ul>
-                <li><strong>Invoice Number:</strong> #{invoiceNumber}</li>
-                <li><strong>Amount:</strong> {amount}</li>
-                <li><strong>Due Date:</strong> {dueDate}</li>
+      // Validate required fields
+      if (!to || !subject || !template || !templateData) {
+        return NextResponse.json({
+          success: false,
+          message: 'Missing required fields: to, subject, template, templateData'
+        }, { status: 400 });
+      }
+
+      // Get user details for email templates
+      const userData = await User.findById(user.id).select('firstName lastName businessName email').lean();
+      
+      // If invoice email, get invoice details
+      let invoiceData = null;
+      if (invoiceId) {
+        invoiceData = await Invoice.findOne({
+          _id: invoiceId,
+          userId: user.id
+        }).populate('clientId').lean();
+      }
+
+      // Email templates with placeholders
+      const emailTemplates = {
+        invoice: {
+          subject: 'Invoice #{invoiceNumber} from {businessName}',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <h2 style="color: #2563eb;">Invoice #{invoiceNumber}</h2>
+              <p>Dear {clientName},</p>
+              <p>Please find attached invoice #{invoiceNumber} for the services provided.</p>
+              
+              <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                <h3>Invoice Details:</h3>
+                <ul>
+                  <li><strong>Invoice Number:</strong> #{invoiceNumber}</li>
+                  <li><strong>Amount:</strong> {amount}</li>
+                  <li><strong>Due Date:</strong> {dueDate}</li>
                 <li><strong>Description:</strong> {description}</li>
               </ul>
             </div>
@@ -184,31 +204,62 @@ export async function POST(request) {
       const placeholder = `{${key}}`;
       emailSubject = emailSubject.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
       emailContent = emailContent.replace(new RegExp(placeholder.replace(/[{}]/g, '\\$&'), 'g'), value);
+    });    // Create transporter for nodemailer
+    const transporter = nodemailer.createTransporter({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
     });
 
-    // In production, replace this with your actual email service
-    // Example with SendGrid:
-    // const sgMail = require('@sendgrid/mail');
-    // sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    // 
-    // const msg = {
-    //   to: to,
-    //   from: process.env.FROM_EMAIL,
-    //   subject: emailSubject,
-    //   html: emailContent,
-    // };
-    // 
-    // await sgMail.send(msg);
+    // Verify transporter configuration
+    try {
+      await transporter.verify();
+    } catch (error) {
+      console.error('SMTP configuration error:', error);
+      // Fall back to mock mode if SMTP is not configured
+      if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        console.log('📧 SMTP not configured, using mock mode');
+        console.log('📧 Email would be sent:', {
+          to,
+          subject: emailSubject,
+          template,
+          timestamp: new Date().toISOString()
+        });
 
-    // Mock email sending - log to console for development
-    console.log('📧 Email would be sent:', {
-      to,
+        return NextResponse.json({
+          success: true,
+          message: 'Email sent successfully (mock mode)',
+          data: {
+            to,
+            subject: emailSubject,
+            template,
+            sentAt: new Date().toISOString(),
+            mode: 'mock'
+          }
+        });
+      }
+      throw error;
+    }
+
+    // Send email using nodemailer
+    const mailOptions = {
+      from: {
+        name: userData.businessName || `${userData.firstName} ${userData.lastName}`,
+        address: process.env.FROM_EMAIL || process.env.SMTP_USER
+      },
+      to: to,
       subject: emailSubject,
-      template,
-      timestamp: new Date().toISOString()
-    });
+      html: emailContent,
+      // Add reply-to if different from sender
+      replyTo: userData.email
+    };
 
-    // Return success response
+    const info = await transporter.sendMail(mailOptions);
+    console.log('📧 Email sent successfully:', info.messageId);    // Return success response
     return NextResponse.json({
       success: true,
       message: 'Email sent successfully',
@@ -216,10 +267,10 @@ export async function POST(request) {
         to,
         subject: emailSubject,
         template,
-        sentAt: new Date().toISOString()
+        sentAt: new Date().toISOString(),
+        messageId: info.messageId
       }
     });
-
   } catch (error) {
     console.error('Email sending error:', error);
     return NextResponse.json({
@@ -228,4 +279,5 @@ export async function POST(request) {
       error: error.message
     }, { status: 500 });
   }
+  }, request);
 }

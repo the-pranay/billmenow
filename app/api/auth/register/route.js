@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
-
-// Mock user database - In production, use a real database
-const users = [];
+import { connectToDatabase } from '../../../lib/database';
+import User from '../../../lib/models/User';
+import { hashPassword, generateToken } from '../../../lib/auth';
 
 export async function POST(request) {
   try {
+    await connectToDatabase();
+    
     const userData = await request.json();
     const { firstName, lastName, email, password, businessName, businessType, phone, country } = userData;
 
@@ -16,8 +18,25 @@ export async function POST(request) {
       );
     }
 
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Please provide a valid email address' },
+        { status: 400 }
+      );
+    }
+
+    // Password validation
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Password must be at least 6 characters long' },
+        { status: 400 }
+      );
+    }
+
     // Check if user already exists
-    const existingUser = users.find(u => u.email === email);
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return NextResponse.json(
         { error: 'User with this email already exists' },
@@ -25,32 +44,53 @@ export async function POST(request) {
       );
     }
 
-    // Create new user (In production, hash password and use database)
-    const newUser = {
-      id: users.length + 1,
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Create new user
+    const newUser = new User({
       firstName,
       lastName,
-      email,
-      password, // In production, hash this password
+      email: email.toLowerCase(),
+      password: hashedPassword,
       businessName,
       businessType,
       phone,
       country,
-      createdAt: new Date().toISOString()
-    };
+      isEmailVerified: false,
+      subscription: {
+        plan: 'free',
+        status: 'active',
+        startDate: new Date()
+      },
+      preferences: {
+        currency: 'USD',
+        dateFormat: 'MM/DD/YYYY',
+        timezone: 'UTC',
+        language: 'en'
+      }
+    });
 
-    users.push(newUser);
+    await newUser.save();
 
-    // Return success response (In production, return JWT token)
+    // Generate JWT token
+    const token = generateToken(newUser._id);    // Return success response
     return NextResponse.json({
       success: true,
       message: 'Account created successfully',
+      token,
       user: {
-        id: newUser.id,
+        id: newUser._id,
         email: newUser.email,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
-        businessName: newUser.businessName
+        businessName: newUser.businessName,
+        businessType: newUser.businessType,
+        phone: newUser.phone,
+        country: newUser.country,
+        isEmailVerified: newUser.isEmailVerified,
+        subscription: newUser.subscription,
+        preferences: newUser.preferences
       }
     });
 

@@ -1,20 +1,28 @@
 import { NextResponse } from 'next/server';
+import { connectToDatabase } from '../../../lib/database';
+import Invoice from '../../../lib/models/Invoice';
+import Payment from '../../../lib/models/Payment';
+import User from '../../../lib/models/User';
+import crypto from 'crypto';
 
 export async function POST(request) {
   try {
+    await connectToDatabase();
+
     const body = await request.text();
     const signature = request.headers.get('x-razorpay-signature');
 
-    // In production, verify webhook signature
-    // const crypto = require('crypto');
-    // const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    // const expectedSignature = crypto.createHmac('sha256', secret)
-    //   .update(body)
-    //   .digest('hex');
+    // Verify webhook signature for security
+    if (process.env.RAZORPAY_WEBHOOK_SECRET) {
+      const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+        .update(body)
+        .digest('hex');
 
-    // if (signature !== expectedSignature) {
-    //   return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
-    // }
+      if (signature !== expectedSignature) {
+        console.error('Invalid webhook signature');
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+      }
+    }
 
     const event = JSON.parse(body);
     
@@ -39,6 +47,14 @@ export async function POST(request) {
       case 'order.paid':
         await handleOrderPaid(event.payload.order.entity);
         break;
+
+      case 'payment.authorized':
+        await handlePaymentAuthorized(event.payload.payment.entity);
+        break;
+
+      case 'refund.created':
+        await handleRefundCreated(event.payload.refund.entity);
+        break;
       
       default:
         console.log('Unhandled webhook event:', event.event);
@@ -56,44 +72,212 @@ export async function POST(request) {
 }
 
 async function handlePaymentCaptured(payment) {
-  // In production:
-  // 1. Update invoice status to 'paid'
-  // 2. Send payment confirmation email
-  // 3. Update analytics/reports
-  // 4. Process any follow-up actions
-  
-  console.log('Payment captured:', {
-    payment_id: payment.id,
-    amount: payment.amount,
-    currency: payment.currency,
-    method: payment.method,
-    status: payment.status
-  });
+  try {
+    console.log('Processing payment captured:', payment.id);
+
+    // Find the payment record in our database
+    const paymentRecord = await Payment.findOne({
+      razorpayPaymentId: payment.id
+    });
+
+    if (!paymentRecord) {
+      console.error('Payment record not found:', payment.id);
+      return;
+    }
+
+    // Update payment status
+    paymentRecord.status = 'completed';
+    paymentRecord.capturedAt = new Date();
+    paymentRecord.razorpayResponse = payment;
+    await paymentRecord.save();
+
+    // Update invoice status to paid
+    const invoice = await Invoice.findById(paymentRecord.invoiceId);
+    if (invoice) {
+      invoice.status = 'paid';
+      invoice.paidAt = new Date();
+      invoice.paidAmount = payment.amount / 100; // Convert from paise to rupees
+      await invoice.save();
+
+      // Send payment confirmation email
+      await sendPaymentConfirmationEmail(invoice, payment);
+    }
+
+    console.log('Payment captured successfully processed:', {
+      payment_id: payment.id,
+      invoice_id: invoice?._id,
+      amount: payment.amount / 100
+    });
+
+  } catch (error) {
+    console.error('Error handling payment captured:', error);
+  }
 }
 
 async function handlePaymentFailed(payment) {
-  // In production:
-  // 1. Log payment failure
-  // 2. Send failure notification
-  // 3. Update invoice status
-  
-  console.log('Payment failed:', {
-    payment_id: payment.id,
-    error_code: payment.error_code,
-    error_description: payment.error_description
-  });
+  try {
+    console.log('Processing payment failed:', payment.id);
+
+    // Find the payment record
+    const paymentRecord = await Payment.findOne({
+      razorpayPaymentId: payment.id
+    });
+
+    if (paymentRecord) {
+      paymentRecord.status = 'failed';
+      paymentRecord.failureReason = payment.error_description;
+      paymentRecord.razorpayResponse = payment;
+      await paymentRecord.save();
+
+      // Update invoice status back to pending
+      const invoice = await Invoice.findById(paymentRecord.invoiceId);
+      if (invoice) {
+        invoice.status = 'pending';
+        await invoice.save();
+      }
+
+      console.log('Payment failure processed:', {
+        payment_id: payment.id,
+        error_code: payment.error_code,
+        error_description: payment.error_description
+      });
+    }
+
+  } catch (error) {
+    console.error('Error handling payment failed:', error);
+  }
 }
 
 async function handleOrderPaid(order) {
-  // In production:
-  // 1. Mark order as completed
-  // 2. Trigger fulfillment process
-  // 3. Send completion notifications
-  
-  console.log('Order paid:', {
-    order_id: order.id,
-    amount: order.amount,
-    amount_paid: order.amount_paid,
-    status: order.status
-  });
+  try {
+    console.log('Processing order paid:', order.id);
+
+    // Find payments for this order
+    const payments = await Payment.find({
+      razorpayOrderId: order.id
+    });
+
+    for (const payment of payments) {
+      payment.status = 'completed';
+      await payment.save();
+
+      // Update associated invoice
+      const invoice = await Invoice.findById(payment.invoiceId);
+      if (invoice) {
+        invoice.status = 'paid';
+        invoice.paidAt = new Date();
+        invoice.paidAmount = order.amount_paid / 100;
+        await invoice.save();
+      }
+    }
+
+    console.log('Order paid processed:', {
+      order_id: order.id,
+      amount_paid: order.amount_paid / 100
+    });
+
+  } catch (error) {
+    console.error('Error handling order paid:', error);
+  }
+}
+
+async function handlePaymentAuthorized(payment) {
+  try {
+    console.log('Processing payment authorized:', payment.id);
+
+    const paymentRecord = await Payment.findOne({
+      razorpayPaymentId: payment.id
+    });
+
+    if (paymentRecord) {
+      paymentRecord.status = 'authorized';
+      paymentRecord.authorizedAt = new Date();
+      paymentRecord.razorpayResponse = payment;
+      await paymentRecord.save();
+    }
+
+  } catch (error) {
+    console.error('Error handling payment authorized:', error);
+  }
+}
+
+async function handleRefundCreated(refund) {
+  try {
+    console.log('Processing refund created:', refund.id);
+
+    // Find the original payment
+    const paymentRecord = await Payment.findOne({
+      razorpayPaymentId: refund.payment_id
+    });
+
+    if (paymentRecord) {
+      // Update payment record with refund info
+      paymentRecord.refundId = refund.id;
+      paymentRecord.refundAmount = refund.amount / 100;
+      paymentRecord.refundStatus = refund.status;
+      paymentRecord.refundedAt = new Date();
+      await paymentRecord.save();
+
+      // Update invoice status
+      const invoice = await Invoice.findById(paymentRecord.invoiceId);
+      if (invoice) {
+        if (refund.amount === paymentRecord.amount * 100) {
+          // Full refund
+          invoice.status = 'refunded';
+        } else {
+          // Partial refund
+          invoice.status = 'partially_refunded';
+        }
+        await invoice.save();
+      }
+    }
+
+  } catch (error) {
+    console.error('Error handling refund created:', error);
+  }
+}
+
+async function sendPaymentConfirmationEmail(invoice, payment) {
+  try {
+    // Get user and client details
+    const user = await User.findById(invoice.userId);
+    const invoiceWithClient = await Invoice.findById(invoice._id).populate('clientId');
+
+    if (user && invoiceWithClient.clientId) {
+      const emailData = {
+        to: invoiceWithClient.clientId.email,
+        subject: 'thankyou',
+        template: 'thankyou',
+        templateData: {
+          clientName: invoiceWithClient.clientId.name,
+          invoiceNumber: invoiceWithClient.invoiceNumber,
+          amount: `₹${(payment.amount / 100).toLocaleString('en-IN')}`,
+          paymentDate: new Date().toLocaleDateString('en-IN'),
+          transactionId: payment.id,
+          senderName: `${user.firstName} ${user.lastName}`,
+          businessName: user.businessName || 'N/A',
+          contactDetails: user.email
+        }
+      };
+
+      // Call email API (you could also directly send email here)
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}` // You'll need to generate a token for system emails
+        },
+        body: JSON.stringify(emailData)
+      });
+
+      if (emailResponse.ok) {
+        console.log('Payment confirmation email sent successfully');
+      } else {
+        console.error('Failed to send payment confirmation email');
+      }
+    }
+
+  } catch (error) {
+    console.error('Error sending payment confirmation email:', error);
+  }
 }

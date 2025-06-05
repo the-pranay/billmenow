@@ -2,11 +2,16 @@
   "name": "billmenow",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "node scripts/seed-database.js",
+    "test-api": "node scripts/test-api.js",
+    "test-razorpay": "node scripts/test-razorpay.js",
+    "list-env": "node scripts/list-env-vars.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
@@ -15,6 +20,7 @@
     "bcryptjs": "^3.0.2",
     "chart.js": "^4.4.9",
     "date-fns": "^4.1.0",
+    "dotenv": "^16.5.0",
     "framer-motion": "^12.16.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.10.3",

@@ -62,7 +62,6 @@ export async function POST(request) {
         preferences: user.preferences
       }
     });
-
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json(
