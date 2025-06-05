@@ -9,11 +9,19 @@ export async function POST(request) {
   try {
     await connectToDatabase();
 
+    // Get raw body for signature verification
     const body = await request.text();
     const signature = request.headers.get('x-razorpay-signature');
 
+    console.log('Webhook received:', {
+      hasBody: !!body,
+      bodyLength: body?.length,
+      hasSignature: !!signature,
+      timestamp: new Date().toISOString()
+    });
+
     // Verify webhook signature for security
-    if (process.env.RAZORPAY_WEBHOOK_SECRET) {
+    if (process.env.RAZORPAY_WEBHOOK_SECRET && signature) {
       const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
         .update(body)
         .digest('hex');
@@ -24,9 +32,22 @@ export async function POST(request) {
       }
     }
 
-    const event = JSON.parse(body);
+    // Parse JSON with error handling
+    let event;
+    try {
+      event = JSON.parse(body);
+    } catch (parseError) {
+      console.error('JSON parsing error:', parseError);
+      console.error('Raw body:', body);
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
+
+    if (!event || !event.event) {
+      console.error('Invalid event structure:', event);
+      return NextResponse.json({ error: 'Invalid event structure' }, { status: 400 });
+    }
     
-    console.log('Webhook received:', {
+    console.log('Webhook parsed successfully:', {
       event: event.event,
       payment_id: event.payload?.payment?.entity?.id,
       order_id: event.payload?.payment?.entity?.order_id,

@@ -41,7 +41,7 @@ The BillMeNow application has been successfully built and is ready for productio
 MONGODB_URI=mongodb+srv://Admin:aB9OFzt6p1XhW45S@billmenow.wcieo80.mongodb.net/billmenow
 
 # JWT
-JWT_SECRET=billmenow-jwt-secret-key-2024-super-secure-random-string-change-in-production
+JWT_SECRET=BillMeNow2024_SuperSecure_JWT_Key_F7x9K2mP8qL5nR3vT6wY1zC4eH8jM9pS
 JWT_EXPIRE=7d
 
 # Razorpay
@@ -54,13 +54,13 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=thepranay2004@gmail.com
-SMTP_PASS=bcjy_dunb_gkcm_ngjc
+SMTP_PASS=bcjy dunb gkcm ngjc
 FROM_EMAIL=thepranay2004@gmail.com
 
 # Application
 NEXT_PUBLIC_APP_URL=https://yourdomain.vercel.app
 NEXTAUTH_URL=https://yourdomain.vercel.app
-NEXTAUTH_SECRET=billmenow-nextauth-secret-key-2024-change-in-production
+NEXTAUTH_SECRET=BillMeNow_NextAuth_Secret_2024_K8mN2pQ5rT9uW3xZ7vB6eF1gH4jL8sM2
 
 # File Upload
 UPLOAD_MAX_SIZE=5242880

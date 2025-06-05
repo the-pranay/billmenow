@@ -11,6 +11,7 @@
     "seed": "node scripts/seed-database.js",
     "test-api": "node scripts/test-api.js",
     "test-razorpay": "node scripts/test-razorpay.js",
+    "test-webhook": "node scripts/test-webhook.js",
     "list-env": "node scripts/list-env-vars.js"
   },
   "dependencies": {
