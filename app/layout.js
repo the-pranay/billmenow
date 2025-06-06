@@ -26,10 +26,9 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <ErrorBoundary>
-          <ToastProvider>
-            <AuthProvider>
+      >        <ErrorBoundary>
+          <AuthProvider>
+            <ToastProvider>
               <div className="min-h-screen flex flex-col">
                 <Navbar />
                 <main className="flex-1">
@@ -37,8 +36,8 @@ export default function RootLayout({ children }) {
                 </main>
                 <Footer />
               </div>
-            </AuthProvider>
-          </ToastProvider>
+            </ToastProvider>
+          </AuthProvider>
         </ErrorBoundary>
       </body>
     </html>

@@ -111,13 +111,15 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
-      }      // Save user and token to localStorage
+      }
+
+      // Save user and token to localStorage
       localStorage.setItem('billmenow_user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token);
       
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: data.user });
       
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.LOGIN_FAILURE, payload: error.message });
       return { success: false, error: error.message };
@@ -141,18 +143,21 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
-      }      // Save user and token to localStorage
+      }
+
+      // Save user and token to localStorage
       localStorage.setItem('billmenow_user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token);
       
       dispatch({ type: AUTH_ACTIONS.REGISTER_SUCCESS, payload: data.user });
       
-      return { success: true };
+      return { success: true, user: data.user };
     } catch (error) {
       dispatch({ type: AUTH_ACTIONS.REGISTER_FAILURE, payload: error.message });
       return { success: false, error: error.message };
     }
   };
+
   // Logout function
   const logout = () => {
     localStorage.removeItem('billmenow_user');

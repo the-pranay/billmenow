@@ -6,22 +6,25 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useToast } from '../../components/Utilities/Toast';
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  });  const [showPassword, setShowPassword] = useState(false);
   const { login, loading, error } = useAuth();
   const router = useRouter();
-
+  const { success, error: showError } = useToast();
   const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await login(formData.email, formData.password);
     if (result.success) {
+      success(`Welcome back, ${result.user.firstName}!`);
       router.push('/dashboard');
+    } else {
+      showError(result.error || 'Login failed');
     }
   };
 

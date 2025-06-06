@@ -60,7 +60,8 @@ export const withAuth = (handler) => {
     request.user = authResult.user;
     request.userId = authResult.userId;
     
-    return handler(request, context);
+    // Pass user as second parameter to match expected handler signature
+    return handler(request, authResult.user);
   };
 };
 

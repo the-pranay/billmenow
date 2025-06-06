@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useToast } from '../../components/Utilities/Toast';
 
 export default function RegisterPage() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -28,10 +29,11 @@ export default function RegisterPage() {
     privacy: false,
     marketing: false
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { register, loading, error } = useAuth();
   const router = useRouter();
+  const { success, error: showError } = useToast();
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (currentStep < 3) {
@@ -41,7 +43,10 @@ export default function RegisterPage() {
     
     const result = await register(formData);
     if (result.success) {
+      success(`Welcome to BillMeNow, ${result.user.firstName}! Your account has been created successfully.`);
       router.push('/dashboard');
+    } else {
+      showError(result.error || 'Registration failed. Please try again.');
     }
   };
 
