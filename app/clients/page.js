@@ -26,11 +26,16 @@ function Clients() {
   useEffect(() => {
     loadClients();
   }, []);
-
   const loadClients = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/clients');
+      const token = localStorage.getItem('token');
+      const response = await fetch('/api/clients', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       const data = await response.json();
       
       if (data.success) {
