@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, User, Building, Phone, Mail, MapPin, Globe, Upload, Save, ArrowLeft } from 'lucide-react';
+import { Camera, User, Building, Mail, Globe, Upload, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
 import withAuth from '../components/Auth/withAuth';
 
 function ProfilePage() {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('business');
   const [profileData, setProfileData] = useState({
     // Business Info
@@ -137,10 +137,9 @@ function ProfilePage() {
                       Business Logo
                     </label>
                     <div className="flex items-center space-x-6">
-                      <div className="relative">
-                        <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
+                      <div className="relative">                        <div className="w-24 h-24 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 flex items-center justify-center bg-gray-50 dark:bg-slate-700 overflow-hidden">
                           {logoPreview ? (
-                            <img src={logoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                            <Image src={logoPreview} alt="Logo preview" width={96} height={96} className="w-full h-full object-cover" />
                           ) : (
                             <Camera className="h-8 w-8 text-gray-400" />
                           )}

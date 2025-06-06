@@ -15,7 +15,6 @@ import {
   Activity
 } from 'lucide-react';
 import Link from 'next/link';
-import { useAuth } from '../contexts/AuthContext';
 import withAuth from '../components/Auth/withAuth';
 
 function ReportsPage() {
