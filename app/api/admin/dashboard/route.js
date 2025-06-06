@@ -1,11 +1,10 @@
-// filepath: d:\billmenow\app\api\admin\dashboard\route.js
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database';
-import User from '../../../lib/models/User';
-import Invoice from '../../../lib/models/Invoice';
-import Payment from '../../../lib/models/Payment';
-import Client from '../../../lib/models/Client';
-import { withAuth, withAdmin } from '../../../lib/middleware';
+import { connectToDatabase } from '../../../lib/database.js';
+import User from '../../../lib/models/User.js';
+import Invoice from '../../../lib/models/Invoice.js';
+import Payment from '../../../lib/models/Payment.js';
+import Client from '../../../lib/models/Client.js';
+import { withAuth, withAdmin } from '../../../lib/middleware.js';
 
 export async function GET(request) {
   return withAuth(async (request, user) => {

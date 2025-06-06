@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database';
-import User from '../../../lib/models/User';
-import { hashPassword, generateToken } from '../../../lib/auth';
+import { connectToDatabase } from '../../../lib/database.js';
+import User from '../../../lib/models/User.js';
+import { hashPassword, generateToken } from '../../../lib/auth.js';
 
 export async function POST(request) {
   try {

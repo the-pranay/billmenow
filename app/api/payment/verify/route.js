@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { connectToDatabase } from '../../../lib/database';
-import Invoice from '../../../lib/models/Invoice';
-import Payment from '../../../lib/models/Payment';
-import { withAuth } from '../../../lib/middleware';
+import { connectToDatabase } from '../../../lib/database.js';
+import Invoice from '../../../lib/models/Invoice.js';
+import Payment from '../../../lib/models/Payment.js';
+import { withAuth } from '../../../lib/middleware.js';
 
 export async function POST(request) {
   return withAuth(async (request, user) => {
