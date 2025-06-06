@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Settings, 
   Bell, 
@@ -23,11 +23,15 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Utilities/Toast';
 import withAuth from '../components/Auth/withAuth';
 
 function SettingsPage() {
   const { user } = useAuth();
+  const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState('general');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [settings, setSettings] = useState({
     // General Settings
     theme: 'system',
@@ -61,6 +65,61 @@ function SettingsPage() {
     analyticsSharing: false,
     dataCollection: 'minimal'
   });
+
+  // Load settings data on component mount
+  useEffect(() => {
+    loadSettingsData();
+  }, []);
+
+  const loadSettingsData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/user/settings', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success && data.settings) {
+        setSettings(prev => ({
+          ...prev,
+          ...data.settings
+        }));
+      }
+    } catch (err) {
+      error('Failed to load settings');
+      console.error('Error loading settings:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const response = await fetch('/api/user/settings', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        success('Settings saved successfully!');
+      } else {
+        error(data.error || 'Failed to save settings');
+      }
+    } catch (err) {
+      error('Failed to save settings');
+      console.error('Error saving settings:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleSettingChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
@@ -647,17 +706,19 @@ function SettingsPage() {
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Save Button */}
+              )}              {/* Save Button */}
               <div className="border-t border-gray-200 dark:border-slate-700 px-6 py-4 bg-gray-50 dark:bg-slate-700/50">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Changes are saved automatically
+                    Save your settings changes
                   </p>
-                  <button className="btn-primary">
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving || isLoading}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
                     <Save className="h-4 w-4 mr-2" />
-                    Save All Settings
+                    {isSaving ? 'Saving...' : 'Save All Settings'}
                   </button>
                 </div>
               </div>

@@ -44,6 +44,123 @@ body {
   transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Button Styles */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: #2563eb;
+  color: white;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-primary:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  background-color: #f3f4f6;
+  color: #374151;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background-color: #e5e7eb;
+}
+
+.btn-secondary:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.5);
+}
+
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark mode button styles */
+.dark .btn-secondary {
+  background-color: #374151;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+.dark .btn-secondary:hover {
+  background-color: #4b5563;
+}
+
+.dark .btn-secondary:focus {
+  box-shadow: 0 0 0 2px rgba(75, 85, 99, 0.5);
+}
+
+/* Input Styles */
+.input-primary {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  color: #111827;
+  font-size: 0.875rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.input-primary::placeholder {
+  color: #6b7280;
+}
+
+.input-primary:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.input-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Dark mode input styles */
+.dark .input-primary {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: white;
+}
+
+.dark .input-primary::placeholder {
+  color: #9ca3af;
+}
+
+.dark .input-primary:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

@@ -1,14 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Camera, User, Building, Mail, Globe, Upload, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Utilities/Toast';
 import withAuth from '../components/Auth/withAuth';
 
 function ProfilePage() {
   const [activeTab, setActiveTab] = useState('business');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuth();
+  const { success, error } = useToast();
   const [profileData, setProfileData] = useState({
     // Business Info
     businessName: '',
@@ -48,6 +53,107 @@ function ProfilePage() {
   });
 
   const [logoPreview, setLogoPreview] = useState(null);
+
+  // Load profile data on component mount
+  useEffect(() => {
+    loadProfileData();
+  }, []);
+
+  const loadProfileData = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/user/profile', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+      if (data.success && data.user) {
+        const userData = data.user;
+        setProfileData(prev => ({
+          ...prev,
+          // Business Info
+          businessName: userData.businessName || '',
+          businessType: userData.businessType || 'freelancer',
+          ownerName: userData.firstName + (userData.lastName ? ` ${userData.lastName}` : '') || '',
+          email: userData.email || '',
+          phone: userData.phone || '',
+          website: userData.businessDetails?.website || '',
+          
+          // Address
+          address: userData.businessDetails?.address || '',
+          city: userData.businessDetails?.city || '',
+          state: userData.businessDetails?.state || '',
+          zipCode: userData.businessDetails?.zipCode || '',
+          country: userData.country || 'India',
+          
+          // Business Details
+          gstNumber: userData.businessDetails?.taxId || '',
+          panNumber: userData.businessDetails?.panNumber || '',
+          businessDescription: userData.businessDetails?.description || '',
+        }));
+      }
+    } catch (err) {
+      error('Failed to load profile data');
+      console.error('Error loading profile:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const [firstName, ...lastNameParts] = profileData.ownerName.trim().split(' ');
+      const lastName = lastNameParts.join(' ');
+      
+      const updateData = {
+        firstName: firstName || '',
+        lastName: lastName || '',
+        businessName: profileData.businessName,
+        businessType: profileData.businessType,
+        phone: profileData.phone,
+        country: profileData.country,
+        address: profileData.address,
+        city: profileData.city,
+        state: profileData.state,
+        zipCode: profileData.zipCode,
+        taxId: profileData.gstNumber,
+        website: profileData.website,
+        preferences: {
+          currency: profileData.currency,
+          invoicePrefix: profileData.invoicePrefix,
+          invoiceNumberStart: profileData.invoiceNumberStart,
+          taxRate: profileData.taxRate,
+          razorpayKeyId: profileData.razorpayKeyId,
+          razorpaySecret: profileData.razorpaySecret,
+          upiId: profileData.upiId
+        }
+      };
+
+      const response = await fetch('/api/user/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        success('Profile updated successfully!');
+      } else {
+        error(data.error || 'Failed to update profile');
+      }
+    } catch (err) {
+      error('Failed to save profile changes');
+      console.error('Error saving profile:', err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleInputChange = (field, value) => {
     setProfileData(prev => ({
@@ -597,17 +703,19 @@ function ProfilePage() {
                     </div>
                   </div>
                 </div>
-              )}
-
-              {/* Save Button */}
+              )}              {/* Save Button */}
               <div className="border-t border-gray-200 dark:border-slate-700 px-6 py-4 bg-gray-50 dark:bg-slate-700/50">
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    All changes are automatically saved
+                    Save your profile information
                   </p>
-                  <button className="btn-primary">
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving || isLoading}
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
                     <Save className="h-4 w-4 mr-2" />
-                    Save Profile
+                    {isSaving ? 'Saving...' : 'Save Profile'}
                   </button>
                 </div>
               </div>
