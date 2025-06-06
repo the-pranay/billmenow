@@ -15,9 +15,8 @@ export default function TermsAndConditions() {
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                 1. Acceptance of Terms
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                By accessing and using BillMeNow ("Service"), you accept and agree to be bound by 
+              </h2>              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                By accessing and using BillMeNow (&quot;Service&quot;), you accept and agree to be bound by 
                 the terms and provision of this agreement. If you do not agree to abide by the 
                 above, please do not use this service.
               </p>

@@ -136,9 +136,8 @@ export default function RefundPolicy() {
               <div className="space-y-4">
                 <div className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
                   <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Credit/Debit Cards</h3>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm">
-                    Refunds appear as a credit on your statement within 5-10 business days. 
-                    The exact timing depends on your bank's processing schedule.
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">                    Refunds appear as a credit on your statement within 5-10 business days. 
+                    The exact timing depends on your bank&apos;s processing schedule.
                   </p>
                 </div>
                 <div className="border border-gray-200 dark:border-gray-700 p-4 rounded-lg">
@@ -203,7 +202,7 @@ export default function RefundPolicy() {
                   <h3 className="font-semibold text-blue-900 dark:text-blue-100 mb-2">Refund Requests</h3>
                   <ul className="text-blue-800 dark:text-blue-200 text-sm space-y-1">
                     <li>Email: refunds@billmenow.com</li>
-                    <li>Subject: "Refund Request - [Your Account Email]"</li>
+                    <li>Subject: &quot;Refund Request - [Your Account Email]&quot;</li>
                     <li>Response time: 2-3 business days</li>
                   </ul>
                 </div>

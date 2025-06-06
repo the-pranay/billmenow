@@ -272,12 +272,11 @@ export async function POST(request) {
       }
     });
   } catch (error) {
-    console.error('Email sending error:', error);
-    return NextResponse.json({
+    console.error('Email sending error:', error);    return NextResponse.json({
       success: false,
       message: 'Failed to send email',
       error: error.message
     }, { status: 500 });
   }
-  }, request);
+  })(request);
 }

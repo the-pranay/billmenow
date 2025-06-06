@@ -2,12 +2,9 @@
 
 import { useState } from 'react';
 import { 
-  BarChart3, 
   TrendingUp, 
   TrendingDown, 
-  Calendar, 
   Download, 
-  Filter, 
   DollarSign, 
   Users, 
   FileText, 
@@ -22,7 +19,6 @@ import { useAuth } from '../contexts/AuthContext';
 import withAuth from '../components/Auth/withAuth';
 
 function ReportsPage() {
-  const { user } = useAuth();
   const [dateRange, setDateRange] = useState('30days');
   const [selectedMetric, setSelectedMetric] = useState('revenue');
   
