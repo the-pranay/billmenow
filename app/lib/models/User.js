@@ -108,6 +108,107 @@ const userSchema = new mongoose.Schema({
     endDate: Date,
     paymentMethod: String,
     customerId: String // Razorpay customer ID
+  },  settings: {
+    // General Settings
+    theme: {
+      type: String,
+      enum: ['light', 'dark', 'system'],
+      default: 'system'
+    },
+    language: {
+      type: String,
+      default: 'en'
+    },
+    timezone: {
+      type: String,
+      default: 'Asia/Kolkata'
+    },
+    dateFormat: {
+      type: String,
+      default: 'DD/MM/YYYY'
+    },
+    currency: {
+      type: String,
+      default: 'INR'
+    },
+    
+    // Notifications
+    emailNotifications: {
+      type: Boolean,
+      default: true
+    },
+    invoiceReminders: {
+      type: Boolean,
+      default: true
+    },
+    paymentAlerts: {
+      type: Boolean,
+      default: true
+    },
+    marketingEmails: {
+      type: Boolean,
+      default: false
+    },
+    pushNotifications: {
+      type: Boolean,
+      default: true
+    },
+    smsNotifications: {
+      type: Boolean,
+      default: false
+    },
+    
+    // Security
+    twoFactorAuth: {
+      type: Boolean,
+      default: false
+    },
+    sessionTimeout: {
+      type: String,
+      default: '30'
+    },
+    loginAlerts: {
+      type: Boolean,
+      default: true
+    },
+    
+    // Invoice Settings
+    autoSaveInvoices: {
+      type: Boolean,
+      default: true
+    },
+    defaultDueDate: {
+      type: String,
+      default: '30'
+    },
+    lateFeePercentage: {
+      type: String,
+      default: '2'
+    },
+    sendReminders: {
+      type: Boolean,
+      default: true
+    },
+    reminderDays: {
+      type: [String],
+      default: ['7', '3', '1']
+    },
+    
+    // Privacy
+    profileVisibility: {
+      type: String,
+      enum: ['public', 'private'],
+      default: 'private'
+    },
+    analyticsSharing: {
+      type: Boolean,
+      default: false
+    },
+    dataCollection: {
+      type: String,
+      enum: ['minimal', 'standard', 'enhanced'],
+      default: 'minimal'
+    }
   },
   emailTemplates: {
     invoice: {

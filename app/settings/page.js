@@ -65,11 +65,42 @@ function SettingsPage() {
     analyticsSharing: false,
     dataCollection: 'minimal'
   });
-
   // Load settings data on component mount
   useEffect(() => {
     loadSettingsData();
   }, []);
+
+  // Apply theme changes when theme setting changes
+  useEffect(() => {
+    if (settings.theme) {
+      applyTheme(settings.theme);
+    }
+  }, [settings.theme]);
+
+  const applyTheme = (theme) => {
+    const html = document.documentElement;
+    
+    if (theme === 'dark') {
+      html.classList.add('dark');
+      html.classList.remove('light');
+      localStorage.setItem('theme', 'dark');
+    } else if (theme === 'light') {
+      html.classList.remove('dark');
+      html.classList.add('light');
+      localStorage.setItem('theme', 'light');
+    } else if (theme === 'system') {
+      // Remove manual theme classes and let system preference take over
+      html.classList.remove('dark', 'light');
+      localStorage.removeItem('theme');
+      
+      // Apply system preference
+      if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        html.classList.add('dark');
+      } else {
+        html.classList.remove('dark');
+      }
+    }
+  };
 
   const loadSettingsData = async () => {
     setIsLoading(true);
@@ -123,6 +154,215 @@ function SettingsPage() {
 
   const handleSettingChange = (key, value) => {
     setSettings(prev => ({ ...prev, [key]: value }));
+  };
+  // Additional button functionality
+  const handleChangePassword = () => {
+    // Create a simple modal for password change
+    const currentPassword = window.prompt('Enter your current password:');
+    if (!currentPassword) return;
+    
+    const newPassword = window.prompt('Enter your new password (minimum 8 characters):');
+    if (!newPassword || newPassword.length < 8) {
+      error('New password must be at least 8 characters long');
+      return;
+    }
+    
+    const confirmPassword = window.prompt('Confirm your new password:');
+    if (newPassword !== confirmPassword) {
+      error('Passwords do not match');
+      return;
+    }
+    
+    changePassword(currentPassword, newPassword, confirmPassword);
+  };
+
+  const changePassword = async (currentPassword, newPassword, confirmPassword) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/auth/change-password', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          currentPassword,
+          newPassword,
+          confirmPassword
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        success('Password changed successfully!');
+      } else {
+        error(data.error || 'Failed to change password');
+      }
+    } catch (err) {
+      error('Failed to change password');
+      console.error('Error changing password:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDownloadData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/user/export-data', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `billmenow-data-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        success('Data downloaded successfully!');
+      } else {
+        error('Failed to download data');
+      }
+    } catch (err) {
+      error('Failed to download data');
+      console.error('Error downloading data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const handleDeleteAccount = () => {
+    const password = window.prompt('To delete your account, please enter your password:');
+    if (!password) return;
+    
+    if (window.confirm('⚠️ WARNING: This will permanently delete your account and ALL data including invoices, clients, and settings. This action CANNOT be undone. Are you absolutely sure?')) {
+      deleteAccount(password);
+    }
+  };
+
+  const deleteAccount = async (password) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/user/delete-account', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmPassword: password
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        success('Account deleted successfully. Redirecting...');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 2000);
+      } else {
+        error(data.error || 'Failed to delete account');
+      }
+    } catch (err) {
+      error('Failed to delete account');
+      console.error('Error deleting account:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSetupTwoFactor = () => {
+    // Implement 2FA setup
+    alert('Two-factor authentication setup will be implemented in a future update.');
+  };
+  const handleDeleteAllData = () => {
+    if (window.confirm('⚠️ WARNING: This will delete ALL your data (invoices, clients, reports) but keep your account. This action CANNOT be undone. Are you sure?')) {
+      deleteAllData();
+    }
+  };
+
+  const deleteAllData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/user/delete-data', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          confirmAction: 'DELETE_ALL_DATA'
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        success('All data deleted successfully!');
+        // Reload settings to show reset values
+        loadSettingsData();
+      } else {
+        error(data.error || 'Failed to delete data');
+      }
+    } catch (err) {
+      error('Failed to delete data');
+      console.error('Error deleting data:', err);
+    } finally {      setIsLoading(false);
+    }
+  };
+
+  const handleExportSettings = async () => {
+    try {
+      const exportData = {
+        settings,
+        exportDate: new Date().toISOString(),
+        version: '1.0'
+      };
+      
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = `billmenow-settings-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      success('Settings exported successfully!');
+    } catch (err) {
+      error('Failed to export settings');
+      console.error('Error exporting settings:', err);
+    }
+  };
+
+  const handleImportSettings = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event) => {
+      const file = event.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const importedData = JSON.parse(e.target.result);
+            if (importedData.settings) {
+              setSettings(importedData.settings);
+              success('Settings imported successfully!');
+            } else {
+              error('Invalid settings file format');
+            }
+          } catch (err) {
+            error('Failed to parse settings file');
+            console.error('Error parsing settings file:', err);
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
   };
 
   const tabs = [
@@ -409,10 +649,12 @@ function SettingsPage() {
                             />
                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
                           </label>
-                        </div>
-                        {settings.twoFactorAuth && (
+                        </div>                        {settings.twoFactorAuth && (
                           <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-                            <button className="btn-secondary">
+                            <button 
+                              className="btn-secondary"
+                              onClick={handleSetupTwoFactor}
+                            >
                               Setup Authenticator App
                             </button>
                           </div>
@@ -468,15 +710,24 @@ function SettingsPage() {
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Password & Account</h3>
                       <div className="space-y-3">
-                        <button className="btn-secondary">
+                        <button 
+                          onClick={handleChangePassword}
+                          className="btn-secondary"
+                        >
                           Change Password
                         </button>
 
-                        <button className="btn-secondary">
+                        <button 
+                          onClick={handleDownloadData}
+                          className="btn-secondary"
+                        >
                           Download Account Data
                         </button>
 
-                        <button className="btn-danger">
+                        <button 
+                          onClick={handleDeleteAccount}
+                          className="btn-danger"
+                        >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete Account
                         </button>
@@ -682,23 +933,38 @@ function SettingsPage() {
                           </select>
                         </div>
                       </div>
-                    </div>
-
-                    {/* Data Export */}
+                    </div>                    {/* Data Export */}
                     <div>
                       <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Data Management</h3>
                       <div className="space-y-3">
-                        <button className="btn-secondary">
+                        <button 
+                          onClick={handleDownloadData}
+                          className="btn-secondary"
+                        >
                           <Download className="h-4 w-4 mr-2" />
                           Export My Data
                         </button>
 
-                        <button className="btn-secondary">
+                        <button 
+                          onClick={handleExportSettings}
+                          className="btn-secondary"
+                        >
                           <Upload className="h-4 w-4 mr-2" />
-                          Import Data
+                          Export Settings
                         </button>
 
-                        <button className="btn-danger">
+                        <button 
+                          onClick={handleImportSettings}
+                          className="btn-secondary"
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          Import Settings
+                        </button>
+
+                        <button 
+                          onClick={handleDeleteAllData}
+                          className="btn-danger"
+                        >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete All Data
                         </button>
