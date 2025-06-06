@@ -111,10 +111,9 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
-      }
-
-      // Save user to localStorage
+      }      // Save user and token to localStorage
       localStorage.setItem('billmenow_user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
       
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: data.user });
       
@@ -142,10 +141,9 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
-      }
-
-      // Save user to localStorage
+      }      // Save user and token to localStorage
       localStorage.setItem('billmenow_user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
       
       dispatch({ type: AUTH_ACTIONS.REGISTER_SUCCESS, payload: data.user });
       
@@ -155,10 +153,10 @@ export function AuthProvider({ children }) {
       return { success: false, error: error.message };
     }
   };
-
   // Logout function
   const logout = () => {
     localStorage.removeItem('billmenow_user');
+    localStorage.removeItem('token');
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
   };
 
