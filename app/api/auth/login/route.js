@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database.js';
-import User from '../../../lib/models/User.js';
-import { comparePassword, generateToken } from '../../../lib/auth.js';
+import { connectToDatabase } from '../../../lib/database';
+import User from '../../../lib/models/User';
+import { comparePassword, generateToken } from '../../../lib/auth';
 
 export async function POST(request) {
   try {
@@ -37,12 +37,11 @@ export async function POST(request) {
       );
     }
 
-    // Update last login
-    user.lastLogin = new Date();
+    // Update last login    user.lastLogin = new Date();
     await user.save();
 
     // Generate JWT token
-    const token = generateToken(user._id);
+    const token = generateToken({ userId: user._id.toString() });
 
     // Return user data and token
     return NextResponse.json({

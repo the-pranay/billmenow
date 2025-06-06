@@ -1,27 +1,19 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database.js';
-import Invoice from '../../../lib/models/Invoice.js';
-import Payment from '../../../lib/models/Payment.js';
-import User from '../../../lib/models/User.js';
+import { connectToDatabase } from '../../../lib/database';
+import Invoice from '../../../lib/models/Invoice';
+import Payment from '../../../lib/models/Payment';
+import User from '../../../lib/models/User';
 import crypto from 'crypto';
 
 export async function POST(request) {
   try {
     await connectToDatabase();
 
-    // Get raw body for signature verification
     const body = await request.text();
     const signature = request.headers.get('x-razorpay-signature');
 
-    console.log('Webhook received:', {
-      hasBody: !!body,
-      bodyLength: body?.length,
-      hasSignature: !!signature,
-      timestamp: new Date().toISOString()
-    });
-
     // Verify webhook signature for security
-    if (process.env.RAZORPAY_WEBHOOK_SECRET && signature) {
+    if (process.env.RAZORPAY_WEBHOOK_SECRET) {
       const expectedSignature = crypto.createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
         .update(body)
         .digest('hex');
@@ -32,22 +24,9 @@ export async function POST(request) {
       }
     }
 
-    // Parse JSON with error handling
-    let event;
-    try {
-      event = JSON.parse(body);
-    } catch (parseError) {
-      console.error('JSON parsing error:', parseError);
-      console.error('Raw body:', body);
-      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
-    }
-
-    if (!event || !event.event) {
-      console.error('Invalid event structure:', event);
-      return NextResponse.json({ error: 'Invalid event structure' }, { status: 400 });
-    }
+    const event = JSON.parse(body);
     
-    console.log('Webhook parsed successfully:', {
+    console.log('Webhook received:', {
       event: event.event,
       payment_id: event.payload?.payment?.entity?.id,
       order_id: event.payload?.payment?.entity?.order_id,

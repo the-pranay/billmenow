@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database.js';
-import User from '../../../lib/models/User.js';
-import Invoice from '../../../lib/models/Invoice.js';
-import { withAuth } from '../../../lib/middleware.js';
+import { connectToDatabase } from '../../../lib/database';
+import User from '../../../lib/models/User';
+import Invoice from '../../../lib/models/Invoice';
+import { withAuth } from '../../../lib/middleware';
 import nodemailer from 'nodemailer';
 
 // Mock email service - replace with actual email provider (SendGrid, Mailgun, etc.)
-export const POST = withAuth(async (request, user) => {
-  try {
-    await connectToDatabase();
+export async function POST(request) {
+  return withAuth(async (request, user) => {
+    try {
+      await connectToDatabase();
 
-    const { to, subject, template, templateData, type, invoiceId } = await request.json();
+      const { to, subject, template, templateData, type, invoiceId } = await request.json();
 
       // Validate required fields
       if (!to || !subject || !template || !templateData) {
@@ -268,7 +269,8 @@ export const POST = withAuth(async (request, user) => {
         template,
         sentAt: new Date().toISOString(),
         messageId: info.messageId
-      }    });
+      }
+    });
   } catch (error) {
     console.error('Email sending error:', error);
     return NextResponse.json({
@@ -277,4 +279,5 @@ export const POST = withAuth(async (request, user) => {
       error: error.message
     }, { status: 500 });
   }
-});
+  }, request);
+}

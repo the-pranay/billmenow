@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database.js';
-import User from '../../../lib/models/User.js';
-import { hashPassword, generateToken } from '../../../lib/auth.js';
+import { connectToDatabase } from '../../../lib/database';
+import User from '../../../lib/models/User';
+import { hashPassword, generateToken } from '../../../lib/auth';
 
 export async function POST(request) {
   try {
@@ -69,12 +69,10 @@ export async function POST(request) {
         timezone: 'UTC',
         language: 'en'
       }
-    });
-
-    await newUser.save();
+    });    await newUser.save();
 
     // Generate JWT token
-    const token = generateToken(newUser._id);    // Return success response
+    const token = generateToken({ userId: newUser._id.toString() });    // Return success response
     return NextResponse.json({
       success: true,
       message: 'Account created successfully',
@@ -92,7 +90,7 @@ export async function POST(request) {
         subscription: newUser.subscription,
         preferences: newUser.preferences
       }
-    });
+    }, { status: 201 });
 
   } catch (error) {
     console.error('Registration error:', error);

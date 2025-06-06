@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database.js';
-import Invoice from '../../../lib/models/Invoice.js';
-import Client from '../../../lib/models/Client.js';
-import Payment from '../../../lib/models/Payment.js';
-import { withAuth } from '../../../lib/middleware.js';
+import { connectToDatabase } from '../../../lib/database';
+import Invoice from '../../../lib/models/Invoice';
+import Client from '../../../lib/models/Client';
+import Payment from '../../../lib/models/Payment';
+import { withAuth } from '../../../lib/middleware';
 
 // GET - Fetch a specific invoice
 export async function GET(request, { params }) {

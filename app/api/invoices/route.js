@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../lib/database.js';
-import Invoice from '../../lib/models/Invoice.js';
-import Client from '../../lib/models/Client.js';
-import { withAuth } from '../../lib/middleware.js';
+import { connectToDatabase } from '../../lib/database';
+import Invoice from '../../lib/models/Invoice';
+import Client from '../../lib/models/Client';
+import { withAuth } from '../../lib/middleware';
 
 // GET - Fetch all invoices for the authenticated user
 export async function GET(request) {

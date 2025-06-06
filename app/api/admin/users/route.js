@@ -1,10 +1,10 @@
 // filepath: d:\billmenow\app\api\admin\users\route.js
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database.js';
-import User from '../../../lib/models/User.js';
-import Invoice from '../../../lib/models/Invoice.js';
-import Payment from '../../../lib/models/Payment.js';
-import { withAuth, withAdmin } from '../../../lib/middleware.js';
+import { connectToDatabase } from '../../../lib/database';
+import User from '../../../lib/models/User';
+import Invoice from '../../../lib/models/Invoice';
+import Payment from '../../../lib/models/Payment';
+import { withAuth, withAdmin } from '../../../lib/middleware';
 
 // GET - Fetch all users (admin only)
 export async function GET(request) {
