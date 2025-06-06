@@ -1,75 +1,40 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import withAuth from '../components/Auth/withAuth';
+import { useToast } from '../components/Utilities/Toast';
 
 function Invoices() {
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const [invoices] = useState([
-    {
-      id: 'INV-2025-001',
-      client: 'Acme Corporation',
-      clientEmail: 'john@acme.com',
-      amount: 25000,
-      status: 'paid',
-      dueDate: '2025-01-15',
-      createdDate: '2025-01-01',
-      services: ['Web Development', 'UI/UX Design']
-    },
-    {
-      id: 'INV-2025-002',
-      client: 'Tech Solutions Ltd',
-      clientEmail: 'admin@techsolutions.com',
-      amount: 18000,
-      status: 'pending',
-      dueDate: '2025-01-20',
-      createdDate: '2025-01-05',
-      services: ['Mobile App Development']
-    },
-    {
-      id: 'INV-2025-003',
-      client: 'Digital Agency',
-      clientEmail: 'contact@digitalagency.com',
-      amount: 32000,
-      status: 'overdue',
-      dueDate: '2025-01-10',
-      createdDate: '2024-12-28',
-      services: ['Full Stack Development', 'SEO Optimization']
-    },
-    {
-      id: 'INV-2025-004',
-      client: 'StartUp Inc',
-      clientEmail: 'hello@startup.com',
-      amount: 15000,
-      status: 'draft',
-      dueDate: '2025-01-25',
-      createdDate: '2025-01-08',
-      services: ['Website Redesign']
-    },
-    {
-      id: 'INV-2025-005',
-      client: 'E-commerce Store',
-      clientEmail: 'support@ecommerce.com',
-      amount: 28000,
-      status: 'paid',
-      dueDate: '2025-01-12',
-      createdDate: '2024-12-30',
-      services: ['E-commerce Development', 'Payment Integration']
-    },
-    {
-      id: 'INV-2025-006',
-      client: 'Marketing Agency',
-      clientEmail: 'info@marketing.com',
-      amount: 22000,
-      status: 'pending',
-      dueDate: '2025-01-22',
-      createdDate: '2025-01-07',
-      services: ['Landing Page Development']
+  const [invoices, setInvoices] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const toast = useToast();
+
+  // Load invoices from API
+  useEffect(() => {
+    loadInvoices();
+  }, []);
+
+  const loadInvoices = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/invoices');
+      const data = await response.json();
+      
+      if (data.success) {
+        setInvoices(data.invoices || []);
+      } else {
+        toast.error('Failed to load invoices');
+      }
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+      toast.error('Failed to load invoices');
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {

@@ -1,57 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
 import withAuth from '../components/Auth/withAuth';
+import { useToast } from '../components/Utilities/Toast';
 
 function Dashboard() {
   const { user } = useAuth();
-  const [stats] = useState({
-    totalInvoices: 24,
-    paidInvoices: 18,
-    pendingInvoices: 4,
-    overdueInvoices: 2,
-    totalRevenue: 125000,
-    thisMonth: 45000,
-    avgInvoiceValue: 5208,
-    clientsCount: 12
+  const toast = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState({
+    totalInvoices: 0,
+    paidInvoices: 0,
+    pendingInvoices: 0,
+    overdueInvoices: 0,
+    totalRevenue: 0,
+    thisMonth: 0,
+    avgInvoiceValue: 0,
+    clientsCount: 0
   });
 
-  const [recentInvoices] = useState([
-    {
-      id: 'INV-2025-001',
-      client: 'Acme Corporation',
-      amount: 25000,
-      status: 'paid',
-      dueDate: '2025-01-15',
-      createdDate: '2025-01-01'
-    },
-    {
-      id: 'INV-2025-002',
-      client: 'Tech Solutions Ltd',
-      amount: 18000,
-      status: 'pending',
-      dueDate: '2025-01-20',
-      createdDate: '2025-01-05'
-    },
-    {
-      id: 'INV-2025-003',
-      client: 'Digital Agency',
-      amount: 32000,
-      status: 'overdue',
-      dueDate: '2025-01-10',
-      createdDate: '2024-12-28'
-    },
-    {
-      id: 'INV-2025-004',
-      client: 'StartUp Inc',
-      amount: 15000,
-      status: 'draft',
-      dueDate: '2025-01-25',
-      createdDate: '2025-01-08'
+  const [recentInvoices, setRecentInvoices] = useState([]);
+
+  // Load dashboard data from API
+  useEffect(() => {
+    loadDashboardData();
+  }, []);
+
+  const loadDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/dashboard');
+      const data = await response.json();
+      
+      if (data.success) {
+        setStats(data.stats || {});
+        setRecentInvoices(data.recentInvoices || []);
+      } else {
+        toast.error('Failed to load dashboard data');
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+      toast.error('Failed to load dashboard data');
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -74,13 +69,13 @@ function Dashboard() {
       currency: 'INR'
     }).format(amount);
   };
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">            <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
               <p className="mt-2 text-gray-600 dark:text-gray-400">
                 Welcome back, {user?.firstName || 'User'}! Here's what's happening with your business.
@@ -106,9 +101,48 @@ function Dashboard() {
           </div>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
+        {isLoading ? (
+          /* Loading State */
+          <div>
+            {/* Loading Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 animate-pulse">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-2"></div>
+                      <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-32"></div>
+                    </div>
+                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Loading Content */}
+            <div className="grid lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 animate-pulse">
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-4"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-16 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6 animate-pulse">
+                <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-24 mb-4"></div>
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="h-12 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>        ) : (
+          /* Main Content */
+          <div>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Revenue</p>
@@ -179,8 +213,7 @@ function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
               </div>
-            </div>
-            <div className="mt-4">
+            </div>            <div className="mt-4">
               <span className="text-sm text-gray-600 dark:text-gray-400">
                 Avg: {formatCurrency(stats.avgInvoiceValue)}
               </span>
@@ -291,19 +324,20 @@ function Dashboard() {
                     <span className="text-gray-600 dark:text-gray-400">Pending</span>
                   </div>
                   <span className="font-semibold text-gray-900 dark:text-white">{stats.pendingInvoices}</span>
-                </div>
-                <div className="flex items-center justify-between">
+                </div>                <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <div className="w-3 h-3 bg-red-500 rounded-full mr-3"></div>
                     <span className="text-gray-600 dark:text-gray-400">Overdue</span>
                   </div>
                   <span className="font-semibold text-gray-900 dark:text-white">{stats.overdueInvoices}</span>
-                </div>
-              </div>
+                </div>              </div>
             </div>
           </div>
         </div>
-      </div>    </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 

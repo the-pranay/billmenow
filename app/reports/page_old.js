@@ -75,26 +75,22 @@ function ReportsPage() {
       pdf.text('Key Performance Indicators', 20, 75);
       
       let yPos = 90;
-      if (reportsData.kpiCards && reportsData.kpiCards.length > 0) {
-        reportsData.kpiCards.forEach((kpi) => {
-          pdf.setFontSize(12);
-          pdf.text(`${kpi.title}: ${kpi.value} (${kpi.change})`, 20, yPos);
-          yPos += 15;
-        });
-      }
+      reportsData.kpiCards.forEach((kpi, index) => {
+        pdf.setFontSize(12);
+        pdf.text(`${kpi.title}: ${kpi.value} (${kpi.change})`, 20, yPos);
+        yPos += 15;
+      });
       
       // Add revenue data
       pdf.setFontSize(16);
       pdf.text('Revenue Breakdown', 20, yPos + 10);
       yPos += 25;
       
-      if (reportsData.revenueData && reportsData.revenueData.length > 0) {
-        reportsData.revenueData.forEach((data) => {
-          pdf.setFontSize(12);
-          pdf.text(`${data.month}: ₹${data.amount.toLocaleString()} (${data.invoices} invoices)`, 20, yPos);
-          yPos += 12;
-        });
-      }
+      reportsData.revenueData.forEach((data, index) => {
+        pdf.setFontSize(12);
+        pdf.text(`${data.month}: ₹${data.amount.toLocaleString()} (${data.invoices} invoices)`, 20, yPos);
+        yPos += 12;
+      });
       
       // Save the PDF
       pdf.save(`billmenow-report-${dateRange}-${new Date().toISOString().split('T')[0]}.pdf`);
@@ -107,8 +103,20 @@ function ReportsPage() {
     }
   };
 
-  // Use real data or fallback to mock data
-  const { revenueData, paymentStatusData, topClients, kpiCards } = reportsData;
+  const getStatusColor = (status) => {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return 'bg-green-500';
+      case 'pending':
+        return 'bg-yellow-500';
+      case 'overdue':
+        return 'bg-red-500';
+      case 'draft':
+        return 'bg-gray-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
@@ -130,18 +138,17 @@ function ReportsPage() {
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
-                className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                className="input-primary text-sm"
               >
                 <option value="7days">Last 7 days</option>
                 <option value="30days">Last 30 days</option>
                 <option value="90days">Last 3 months</option>
                 <option value="6months">Last 6 months</option>
                 <option value="1year">Last year</option>
-              </select>
-              <button 
+              </select>              <button 
                 onClick={exportToPDF}
                 disabled={isExporting}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold rounded-lg hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
+                className="btn-secondary"
               >
                 <Download className="h-4 w-4 mr-2" />
                 {isExporting ? 'Exporting...' : 'Export PDF'}
@@ -151,8 +158,7 @@ function ReportsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* KPI Cards */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">        {/* KPI Cards */}
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[1, 2, 3, 4].map((i) => (
@@ -165,7 +171,7 @@ function ReportsPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {kpiCards && kpiCards.map((kpi, index) => (
+            {reportsData.kpiCards.map((kpi, index) => (
               <div key={index} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -224,7 +230,7 @@ function ReportsPage() {
 
               {/* Simple Bar Chart */}
               <div className="space-y-4">
-                {revenueData && revenueData.map((data, index) => (
+                {revenueData.map((data, index) => (
                   <div key={index} className="flex items-center space-x-4">
                     <div className="w-8 text-sm text-gray-600 dark:text-gray-400">{data.month}</div>
                     <div className="flex-1">
@@ -260,10 +266,10 @@ function ReportsPage() {
               </div>
 
               <div className="space-y-4">
-                {paymentStatusData && paymentStatusData.map((status, index) => (
+                {paymentStatusData.map((status, index) => (
                   <div key={index} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${status.color || 'bg-gray-500'}`}></div>
+                      <div className={`w-3 h-3 rounded-full ${status.color}`}></div>
                       <div>
                         <p className="text-sm font-medium text-gray-900 dark:text-white">{status.status}</p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">{status.count} invoices</p>
@@ -278,46 +284,132 @@ function ReportsPage() {
                 ))}
               </div>
 
-              {paymentStatusData && paymentStatusData.length > 0 && (
-                <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</span>
-                    <span className="text-lg font-bold text-gray-900 dark:text-white">
-                      ₹{paymentStatusData.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
-                    </span>
-                  </div>
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-slate-700">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600 dark:text-gray-400">Total</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white">
+                    ₹{paymentStatusData.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}
+                  </span>
                 </div>
-              )}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Top Clients */}
-        {topClients && topClients.length > 0 && (
-          <div className="mt-8">
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
-              <div className="flex items-center space-x-3 mb-6">
-                <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Top Clients</h2>
+        {/* Additional Analytics */}
+        <div className="grid lg:grid-cols-2 gap-8 mt-8">
+          {/* Top Clients */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Top Clients</h2>
+            </div>
+
+            <div className="space-y-4">
+              {topClients.map((client, index) => (
+                <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+                  <div>
+                    <p className="font-medium text-gray-900 dark:text-white">{client.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{client.invoices} invoices</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-900 dark:text-white">₹{client.amount.toLocaleString()}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Performance Metrics */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Activity className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Performance Metrics</h2>
+            </div>
+
+            <div className="space-y-6">
+              {/* Invoice Success Rate */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Invoice Success Rate</span>
+                  <span className="text-sm font-bold text-green-600 dark:text-green-400">92%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '92%' }}></div>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                {topClients.map((client, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
-                    <div>
-                      <p className="font-medium text-gray-900 dark:text-white">{client.name}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{client.invoices} invoices</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-gray-900 dark:text-white">₹{client.amount.toLocaleString()}</p>
-                    </div>
+              {/* Collection Rate */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Collection Rate</span>
+                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">87%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                  <div className="bg-blue-500 h-2 rounded-full" style={{ width: '87%' }}></div>
+                </div>
+              </div>
+
+              {/* Client Retention */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Client Retention</span>
+                  <span className="text-sm font-bold text-purple-600 dark:text-purple-400">95%</span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-2">
+                  <div className="bg-purple-500 h-2 rounded-full" style={{ width: '95%' }}></div>
+                </div>
+              </div>
+
+              {/* Average Invoice Value */}
+              <div className="pt-4 border-t border-gray-200 dark:border-slate-700">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Invoice Value</p>
+                    <p className="text-xl font-bold text-gray-900 dark:text-white">₹36,286</p>
                   </div>
-                ))}
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Monthly Growth</p>
+                    <p className="text-xl font-bold text-green-600 dark:text-green-400">+8.2%</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+
+        {/* Insights & Recommendations */}
+        <div className="mt-8">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Insights & Recommendations</h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                <h3 className="font-medium text-green-800 dark:text-green-200 mb-2">💡 Revenue Growth</h3>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Your revenue increased by 12.5% this month. Consider raising your rates for new projects.
+                </p>
+              </div>
+
+              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                <h3 className="font-medium text-yellow-800 dark:text-yellow-200 mb-2">⚠️ Payment Delays</h3>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                  8 invoices are overdue. Send payment reminders to improve cash flow.
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-2">📈 Client Growth</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300">
+                  You gained 3 new clients this month. Focus on client retention strategies.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>      </div>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import withAuth from '../../components/Auth/withAuth';
+import { useToast } from '../../components/Utilities/Toast';
+import jsPDF from 'jspdf';
 
 function CreateInvoice() {
   const router = useRouter();
@@ -24,14 +26,7 @@ function CreateInvoice() {
     globalTax: 0,
     discount: 0
   });
-
   const [previewMode, setPreviewMode] = useState(false);
-
-  const clients = [
-    { id: '1', name: 'Acme Corporation', email: 'john@acme.com', address: '123 Business St, City, State 12345' },
-    { id: '2', name: 'Tech Solutions Ltd', email: 'admin@techsolutions.com', address: '456 Tech Ave, City, State 67890' },
-    { id: '3', name: 'Digital Agency', email: 'contact@digitalagency.com', address: '789 Creative Blvd, City, State 11111' }
-  ];
 
   const addItem = () => {
     setFormData({
@@ -94,15 +89,196 @@ function CreateInvoice() {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
+  };  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [isLoadingClients, setIsLoadingClients] = useState(true);
+  const toast = useToast();
+
+  // Load clients from API
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  const loadClients = async () => {
+    try {
+      setIsLoadingClients(true);
+      const response = await fetch('/api/clients');
+      const data = await response.json();
+      
+      if (data.success) {
+        setClients(data.clients || []);
+      } else {
+        toast.error('Failed to load clients');
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
+      toast.error('Failed to load clients');
+    } finally {
+      setIsLoadingClients(false);
+    }
   };
 
-  const handleSubmit = (status = 'draft') => {
-    // Handle form submission
-    console.log('Saving invoice with status:', status);
-    console.log('Form data:', formData);
+  const downloadPDF = async () => {
+    try {
+      const pdf = new jsPDF();
+      
+      // Add title
+      pdf.setFontSize(20);
+      pdf.text('INVOICE', 20, 30);
+      
+      // Add invoice number
+      pdf.setFontSize(12);
+      pdf.text(`Invoice Number: ${formData.invoiceNumber}`, 20, 45);
+      pdf.text(`Issue Date: ${new Date(formData.issueDate).toLocaleDateString()}`, 20, 55);
+      pdf.text(`Due Date: ${new Date(formData.dueDate).toLocaleDateString()}`, 20, 65);
+      
+      // Add client info
+      pdf.setFontSize(14);
+      pdf.text('Bill To:', 20, 85);
+      pdf.setFontSize(12);
+      pdf.text(formData.clientName, 20, 95);
+      pdf.text(formData.clientEmail, 20, 105);
+      
+      // Add items
+      pdf.setFontSize(14);
+      pdf.text('Items:', 20, 125);
+      
+      let yPos = 140;
+      formData.items.forEach((item, index) => {
+        pdf.setFontSize(10);
+        pdf.text(`${item.description} - Qty: ${item.quantity} x ₹${item.rate} = ₹${(item.quantity * item.rate).toLocaleString()}`, 20, yPos);
+        yPos += 10;
+      });
+      
+      // Add totals
+      yPos += 10;
+      const subtotal = calculateSubtotal();
+      const tax = calculateTax();
+      const total = calculateTotal();
+      
+      pdf.setFontSize(12);
+      pdf.text(`Subtotal: ₹${subtotal.toLocaleString()}`, 20, yPos);
+      pdf.text(`Tax: ₹${tax.toLocaleString()}`, 20, yPos + 10);
+      pdf.text(`Total: ₹${total.toLocaleString()}`, 20, yPos + 20);
+      
+      // Save the PDF
+      pdf.save(`${formData.invoiceNumber}.pdf`);
+      toast.success('PDF downloaded successfully!');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Failed to generate PDF');
+    }
+  };
+
+  const handleSubmit = async (status = 'draft') => {
+    if (isSubmitting) return;
     
-    // Redirect to invoices page
-    router.push('/invoices');
+    setIsSubmitting(true);
+    
+    try {      // Validate required fields
+      if (!formData.clientId) {
+        toast.error('Please select a client');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!formData.items.length || !formData.items[0].description) {
+        toast.error('Please add at least one item');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Calculate totals
+      const subtotal = calculateSubtotal();
+      const taxAmount = calculateTax();
+      const discountAmount = subtotal * formData.discount / 100;
+      const total = subtotal + taxAmount - discountAmount;
+
+      // Prepare invoice data
+      const invoiceData = {
+        clientId: formData.clientId,
+        items: formData.items.map(item => ({
+          description: item.description,
+          quantity: parseFloat(item.quantity),
+          rate: parseFloat(item.rate),
+          amount: item.quantity * item.rate
+        })),
+        taxRate: formData.globalTax,
+        discountRate: formData.discount,
+        notes: formData.notes,
+        dueDate: formData.dueDate,
+        status: status
+      };
+
+      // Save invoice
+      const response = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invoiceData)
+      });
+
+      const result = await response.json();        if (result.success) {
+          toast.success('Invoice created successfully!');
+          
+          // If sending invoice, also send email
+          if (status === 'sent') {
+            await sendInvoiceEmail(result.invoice);
+          }
+          
+          // Redirect after a delay
+          setTimeout(() => {
+            router.push('/invoices');
+          }, 1500);
+        } else {
+          toast.error(result.error || 'Failed to create invoice');
+        }    } catch (error) {
+      console.error('Error creating invoice:', error);
+      toast.error('Failed to create invoice. Please try again.');
+    }
+    
+    setIsSubmitting(false);
+  };
+
+  const sendInvoiceEmail = async (invoice) => {
+    try {
+      const emailData = {
+        to: formData.clientEmail,
+        subject: 'invoice',
+        template: 'invoice',
+        templateData: {
+          clientName: formData.clientName,
+          invoiceNumber: invoice.invoiceNumber,
+          amount: `₹${invoice.total.toLocaleString('en-IN')}`,
+          dueDate: new Date(invoice.dueDate).toLocaleDateString('en-IN'),
+          description: invoice.items.map(item => item.description).join(', '),
+          paymentLink: `${window.location.origin}/payment/${invoice._id}`,
+          senderName: user?.firstName ? `${user.firstName} ${user.lastName}` : 'BillMeNow User',
+          businessName: user?.businessName || 'BillMeNow',
+          contactDetails: user?.email || 'contact@billmenow.com'
+        },
+        invoiceId: invoice._id
+      };
+
+      const emailResponse = await fetch('/api/email/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+      });
+
+      const emailResult = await emailResponse.json();
+        if (emailResult.success) {
+        toast.success('Invoice sent to client via email!');
+      } else {
+        toast.warning('Invoice created but email failed to send');
+      }
+    } catch (error) {
+      console.error('Error sending email:', error);
+      toast.warning('Invoice created but email failed to send');
+    }
   };
 
   if (previewMode) {
@@ -120,8 +296,10 @@ function CreateInvoice() {
               </svg>
               Back to Edit
             </button>
-            <div className="flex space-x-3">
-              <button className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+            <div className="flex space-x-3">              <button 
+                onClick={downloadPDF}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
                 Download PDF
               </button>
               <button 

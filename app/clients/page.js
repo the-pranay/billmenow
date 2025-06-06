@@ -1,12 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import withAuth from '../components/Auth/withAuth';
+import { useToast } from '../components/Utilities/Toast';
 
 function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [clients, setClients] = useState([]);
+  const toast = useToast();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -16,56 +22,29 @@ function Clients() {
     notes: ''
   });
 
-  const [clients] = useState([
-    {
-      id: '1',
-      name: 'John Smith',
-      email: 'john@acme.com',
-      phone: '+91 9876543210',
-      company: 'Acme Corporation',
-      address: '123 Business St, Mumbai, Maharashtra 400001',
-      totalInvoices: 8,
-      totalAmount: 125000,
-      lastInvoice: '2025-01-15',
-      status: 'active'
-    },
-    {
-      id: '2',
-      name: 'Sarah Johnson',
-      email: 'admin@techsolutions.com',
-      phone: '+91 9876543211',
-      company: 'Tech Solutions Ltd',
-      address: '456 Tech Ave, Bangalore, Karnataka 560001',
-      totalInvoices: 12,
-      totalAmount: 180000,
-      lastInvoice: '2025-01-20',
-      status: 'active'
-    },
-    {
-      id: '3',
-      name: 'Mike Davis',
-      email: 'contact@digitalagency.com',
-      phone: '+91 9876543212',
-      company: 'Digital Agency',
-      address: '789 Creative Blvd, Delhi, Delhi 110001',
-      totalInvoices: 6,
-      totalAmount: 95000,
-      lastInvoice: '2025-01-10',
-      status: 'active'
-    },
-    {
-      id: '4',
-      name: 'Emma Wilson',
-      email: 'hello@startup.com',
-      phone: '+91 9876543213',
-      company: 'StartUp Inc',
-      address: '321 Innovation St, Hyderabad, Telangana 500001',
-      totalInvoices: 4,
-      totalAmount: 60000,
-      lastInvoice: '2025-01-08',
-      status: 'inactive'
+  // Load clients from API
+  useEffect(() => {
+    loadClients();
+  }, []);
+
+  const loadClients = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/clients');
+      const data = await response.json();
+      
+      if (data.success) {
+        setClients(data.clients || []);
+      } else {
+        toast.error('Failed to load clients');
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
+      toast.error('Failed to load clients');
+    } finally {
+      setIsLoading(false);
     }
-  ]);
+  };
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -87,19 +66,46 @@ function Clients() {
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.company.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Adding new client:', formData);
-    setShowAddModal(false);
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      company: '',
-      address: '',
-      notes: ''
-    });
+    
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    
+    try {
+      const response = await fetch('/api/clients', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        toast.success('Client added successfully!');
+        setShowAddModal(false);
+        setFormData({
+          name: '',
+          email: '',
+          phone: '',
+          company: '',
+          address: '',
+          notes: ''
+        });
+        // Reload clients
+        loadClients();
+      } else {
+        toast.error(result.error || 'Failed to add client');
+      }
+    } catch (error) {
+      console.error('Error adding client:', error);
+      toast.error('Failed to add client. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -323,12 +329,10 @@ function Clients() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Add Client Modal */}
+      </div>      {/* Add Client Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-gray-700">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Add New Client</h2>
