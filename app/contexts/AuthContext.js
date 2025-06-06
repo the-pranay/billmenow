@@ -79,17 +79,26 @@ function authReducer(state, action) {
 // Auth Provider Component
 export function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
-
   // Load user from localStorage on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('billmenow_user');
-    if (savedUser) {
+    const savedToken = localStorage.getItem('token');
+    
+    if (savedUser && savedToken) {
       try {
         const user = JSON.parse(savedUser);
+        
+        // Also set cookie if it doesn't exist (for middleware)
+        if (!document.cookie.includes('auth-token=')) {
+          document.cookie = `auth-token=${savedToken}; path=/; max-age=${7 * 24 * 60 * 60}`;
+        }
+        
         dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: user });
       } catch (error) {
         console.error('Error loading saved user:', error);
         localStorage.removeItem('billmenow_user');
+        localStorage.removeItem('token');
+        document.cookie = 'auth-token=; path=/; max-age=0';
       }
     }
   }, []);
@@ -111,11 +120,12 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
-      }
-
-      // Save user and token to localStorage
+      }      // Save user and token to localStorage and cookies
       localStorage.setItem('billmenow_user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token);
+      
+      // Also save token as cookie for middleware
+      document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
       
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: data.user });
       
@@ -143,11 +153,12 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
-      }
-
-      // Save user and token to localStorage
+      }      // Save user and token to localStorage and cookies
       localStorage.setItem('billmenow_user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token);
+      
+      // Also save token as cookie for middleware
+      document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
       
       dispatch({ type: AUTH_ACTIONS.REGISTER_SUCCESS, payload: data.user });
       
@@ -157,11 +168,14 @@ export function AuthProvider({ children }) {
       return { success: false, error: error.message };
     }
   };
-
   // Logout function
   const logout = () => {
     localStorage.removeItem('billmenow_user');
     localStorage.removeItem('token');
+    
+    // Also remove auth-token cookie
+    document.cookie = 'auth-token=; path=/; max-age=0';
+    
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
   };
 
