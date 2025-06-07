@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import withAuth from '../../components/Auth/withAuth';
 import { useToast } from '../../components/Utilities/Toast';
+import { clientsAPI, invoicesAPI } from '../../lib/api';
 import jsPDF from 'jspdf';
 
 function CreateInvoice() {
@@ -54,11 +55,10 @@ function CreateInvoice() {
     
     setFormData({ ...formData, items: newItems });
   };
-
   const selectClient = (client) => {
     setFormData({
       ...formData,
-      clientId: client.id,
+      clientId: client._id || client.id,
       clientName: client.name,
       clientEmail: client.email,
       clientAddress: client.address
@@ -98,14 +98,12 @@ function CreateInvoice() {
   useEffect(() => {
     loadClients();
   }, []);
-
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);
-      const response = await fetch('/api/clients');
-      const data = await response.json();
+      const data = await clientsAPI.getAll();
       
-      if (data.success) {
+      if (data && data.success) {
         setClients(data.clients || []);
       } else {
         toast.error('Failed to load clients');
@@ -208,18 +206,10 @@ function CreateInvoice() {
         notes: formData.notes,
         dueDate: formData.dueDate,
         status: status
-      };
+      };      // Save invoice
+      const result = await invoicesAPI.create(invoiceData);
 
-      // Save invoice
-      const response = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoiceData)
-      });
-
-      const result = await response.json();        if (result.success) {
+      if (result.success) {
           toast.success('Invoice created successfully!');
           
           // If sending invoice, also send email
@@ -509,13 +499,12 @@ function CreateInvoice() {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Select Existing Client
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  {clients.map((client) => (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">                  {clients.map((client) => (
                     <button
-                      key={client.id}
+                      key={client._id || client.id}
                       onClick={() => selectClient(client)}
                       className={`p-3 border rounded-lg text-left transition-colors ${
-                        formData.clientId === client.id
+                        formData.clientId === (client._id || client.id)
                           ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
                           : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-slate-700'
                       }`}

@@ -97,10 +97,8 @@ export async function PUT(request, { params }) {
         isRecurring,
         recurringConfig: isRecurring ? recurringConfig : undefined,
         updatedAt: new Date()
-      };
-
-      // Update status if provided
-      if (status && ['pending', 'paid', 'overdue', 'cancelled'].includes(status)) {
+      };      // Update status if provided
+      if (status && ['draft', 'sent', 'viewed', 'paid', 'overdue', 'cancelled'].includes(status)) {
         updateFields.status = status;
       }
 

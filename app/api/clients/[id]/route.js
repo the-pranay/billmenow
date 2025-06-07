@@ -45,11 +45,10 @@ export async function GET(request, { params }) {
                   0
                 ]
               }
-            },
-            pendingAmount: {
+            },            pendingAmount: {
               $sum: {
                 $cond: [
-                  { $eq: ['$status', 'pending'] },
+                  { $in: ['$status', ['sent', 'viewed']] },
                   '$total',
                   0
                 ]

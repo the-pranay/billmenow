@@ -127,12 +127,10 @@ async function handlePaymentFailed(payment) {
       paymentRecord.status = 'failed';
       paymentRecord.failureReason = payment.error_description;
       paymentRecord.razorpayResponse = payment;
-      await paymentRecord.save();
-
-      // Update invoice status back to pending
+      await paymentRecord.save();      // Update invoice status back to sent
       const invoice = await Invoice.findById(paymentRecord.invoiceId);
       if (invoice) {
-        invoice.status = 'pending';
+        invoice.status = 'sent';
         await invoice.save();
       }
 

@@ -72,12 +72,11 @@ export async function GET(request) {
       };
 
       summaryStats.forEach(stat => {
-        summary.total += stat.count;
-        summary.totalAmount += stat.totalAmount;
+        summary.total += stat.count;        summary.totalAmount += stat.totalAmount;
         
-        if (stat._id === 'pending') {
-          summary.pending = stat.count;
-          summary.pendingAmount = stat.totalAmount;
+        if (stat._id === 'sent' || stat._id === 'viewed') {
+          summary.pending += stat.count;
+          summary.pendingAmount += stat.totalAmount;
         } else if (stat._id === 'paid') {
           summary.paid = stat.count;
           summary.paidAmount = stat.totalAmount;
@@ -188,7 +187,7 @@ export async function POST(request) {
         discountRate,
         discountAmount,
         total,
-        status: 'pending',
+        status: 'draft',
         dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         notes,
         isRecurring,

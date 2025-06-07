@@ -139,7 +139,7 @@ async function seedDatabase() {
           taxRate: 18,
           taxAmount: 13500,
           totalAmount: 88500,
-          status: 'pending',
+          status: 'sent',
           issueDate: new Date('2024-02-01'),
           dueDate: new Date('2024-03-01'),
           notes: 'Payment due within 30 days'

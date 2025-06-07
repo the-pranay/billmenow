@@ -172,10 +172,9 @@ async function generateClientReport(baseQuery, period) {
         pendingAmount: {
           $sum: {
             $map: {
-              input: {
-                $filter: {
+              input: {                $filter: {
                   input: '$invoices',
-                  cond: { $eq: ['$$this.status', 'pending'] }
+                  cond: { $in: ['$$this.status', ['sent', 'viewed']] }
                 }
               },
               as: 'invoice',

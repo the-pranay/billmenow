@@ -64,8 +64,7 @@ function Clients() {
     client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     client.company.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const handleSubmit = async (e) => {
+  );  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (isSubmitting) return;
@@ -73,15 +72,7 @@ function Clients() {
     setIsSubmitting(true);
     
     try {
-      const response = await fetch('/api/clients', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const result = await response.json();
+      const result = await clientsAPI.create(formData);
 
       if (result.success) {
         toast.success('Client added successfully!');

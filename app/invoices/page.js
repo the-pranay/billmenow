@@ -35,12 +35,12 @@ function Invoices() {
       setIsLoading(false);
     }
   };
-
   const getStatusColor = (status) => {
     switch (status) {
       case 'paid':
         return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
-      case 'pending':
+      case 'sent':
+      case 'viewed':
         return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
       case 'overdue':
         return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
@@ -65,18 +65,24 @@ function Invoices() {
       year: 'numeric'
     });
   };
-
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesTab = activeTab === 'all' || invoice.status === activeTab;
+    let matchesTab = false;
+    if (activeTab === 'all') {
+      matchesTab = true;
+    } else if (activeTab === 'pending') {
+      matchesTab = ['sent', 'viewed'].includes(invoice.status);
+    } else {
+      matchesTab = invoice.status === activeTab;
+    }
+    
     const matchesSearch = invoice.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          invoice.id.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesTab && matchesSearch;
   });
-
   const tabs = [
     { id: 'all', label: 'All Invoices', count: invoices.length },
     { id: 'paid', label: 'Paid', count: invoices.filter(inv => inv.status === 'paid').length },
-    { id: 'pending', label: 'Pending', count: invoices.filter(inv => inv.status === 'pending').length },
+    { id: 'pending', label: 'Pending', count: invoices.filter(inv => ['sent', 'viewed'].includes(inv.status)).length },
     { id: 'overdue', label: 'Overdue', count: invoices.filter(inv => inv.status === 'overdue').length },
     { id: 'draft', label: 'Draft', count: invoices.filter(inv => inv.status === 'draft').length }
   ];
