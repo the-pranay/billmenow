@@ -22,27 +22,17 @@ function Clients() {
     address: '',
     notes: ''
   });
-
   // Load clients from API
   useEffect(() => {
     loadClients();
-  }, []);  const loadClients = async () => {
+  }, []);
+
+  const loadClients = async () => {
     try {
       setIsLoading(true);
       const data = await clientsAPI.getAll();
       
       if (data && data.success) {
-        setClients(data.clients || []);
-      } else {
-        toast.error('Failed to load clients');
-      }
-    } catch (error) {
-      console.error('Error loading clients:', error);
-      toast.error('Failed to load clients');
-    } finally {
-      setIsLoading(false);
-    }
-  };
         setClients(data.clients || []);
       } else {
         toast.error('Failed to load clients');
