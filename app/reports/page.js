@@ -17,6 +17,7 @@ import {
 import Link from 'next/link';
 import withAuth from '../components/Auth/withAuth';
 import { useToast } from '../components/Utilities/Toast';
+import { reportsAPI } from '../lib/api';
 import jsPDF from 'jspdf';
 
 function ReportsPage() {
@@ -40,10 +41,9 @@ function ReportsPage() {
   const loadReportsData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(`/api/reports?dateRange=${dateRange}`);
-      const data = await response.json();
+      const data = await reportsAPI.getAll();
       
-      if (data.success) {
+      if (data && data.success) {
         setReportsData(data.reports || {});
       } else {
         toast.error('Failed to load reports data');

@@ -78,8 +78,7 @@ function authReducer(state, action) {
 
 // Auth Provider Component
 export function AuthProvider({ children }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);
-  // Load user from localStorage on mount
+  const [state, dispatch] = useReducer(authReducer, initialState);  // Load user from localStorage on mount
   useEffect(() => {
     const savedUser = localStorage.getItem('billmenow_user');
     const savedToken = localStorage.getItem('token');
@@ -88,12 +87,32 @@ export function AuthProvider({ children }) {
       try {
         const user = JSON.parse(savedUser);
         
-        // Also set cookie if it doesn't exist (for middleware)
-        if (!document.cookie.includes('auth-token=')) {
-          document.cookie = `auth-token=${savedToken}; path=/; max-age=${7 * 24 * 60 * 60}`;
-        }
+        // Verify token is still valid by making a test API call
+        fetch('/api/dashboard', {
+          headers: {
+            'Authorization': `Bearer ${savedToken}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        .then(response => {
+          if (response.ok) {
+            // Token is valid, set cookie and login
+            document.cookie = `auth-token=${savedToken}; path=/; max-age=${7 * 24 * 60 * 60}; secure; samesite=strict`;
+            dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: user });
+          } else {
+            // Token is invalid, clear everything
+            localStorage.removeItem('billmenow_user');
+            localStorage.removeItem('token');
+            document.cookie = 'auth-token=; path=/; max-age=0';
+          }
+        })
+        .catch(() => {
+          // Network error or API error, clear everything
+          localStorage.removeItem('billmenow_user');
+          localStorage.removeItem('token');
+          document.cookie = 'auth-token=; path=/; max-age=0';
+        });
         
-        dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: user });
       } catch (error) {
         console.error('Error loading saved user:', error);
         localStorage.removeItem('billmenow_user');
@@ -102,7 +121,6 @@ export function AuthProvider({ children }) {
       }
     }
   }, []);
-
   // Login function
   const login = async (email, password) => {
     dispatch({ type: AUTH_ACTIONS.LOGIN_START });
@@ -120,12 +138,14 @@ export function AuthProvider({ children }) {
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
-      }      // Save user and token to localStorage and cookies
+      }
+
+      // Save user and token to localStorage and cookies
       localStorage.setItem('billmenow_user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token);
       
-      // Also save token as cookie for middleware
-      document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
+      // Also save token as cookie for middleware - ensure it's set properly
+      document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
       
       dispatch({ type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: data.user });
       
@@ -158,7 +178,7 @@ export function AuthProvider({ children }) {
       localStorage.setItem('token', data.token);
       
       // Also save token as cookie for middleware
-      document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
+      document.cookie = `auth-token=${data.token}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax; Secure=${window.location.protocol === 'https:'}`;
       
       dispatch({ type: AUTH_ACTIONS.REGISTER_SUCCESS, payload: data.user });
       
@@ -167,16 +187,20 @@ export function AuthProvider({ children }) {
       dispatch({ type: AUTH_ACTIONS.REGISTER_FAILURE, payload: error.message });
       return { success: false, error: error.message };
     }
-  };
-  // Logout function
+  };  // Logout function
   const logout = () => {
     localStorage.removeItem('billmenow_user');
     localStorage.removeItem('token');
     
     // Also remove auth-token cookie
-    document.cookie = 'auth-token=; path=/; max-age=0';
+    document.cookie = 'auth-token=; path=/; max-age=0; SameSite=Lax';
     
     dispatch({ type: AUTH_ACTIONS.LOGOUT });
+    
+    // Redirect to home page after logout
+    if (typeof window !== 'undefined') {
+      window.location.href = '/';
+    }
   };
 
   // Forgot password function

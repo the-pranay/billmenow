@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
 import withAuth from '../components/Auth/withAuth';
 import { useToast } from '../components/Utilities/Toast';
+import { dashboardAPI } from '../lib/api';
 
 function Dashboard() {
   const { user } = useAuth();
@@ -31,10 +32,9 @@ function Dashboard() {
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/dashboard');
-      const data = await response.json();
+      const data = await dashboardAPI.getStats();
       
-      if (data.success) {
+      if (data && data.success) {
         setStats(data.stats || {});
         setRecentInvoices(data.recentInvoices || []);
       } else {

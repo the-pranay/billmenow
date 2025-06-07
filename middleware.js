@@ -39,10 +39,11 @@ export function middleware(request) {
     return NextResponse.redirect(url);
   }
   
-  // If accessing auth route with token, redirect to dashboard
-  if (isAuthRoute && token) {
+  // If accessing auth route with token, redirect to dashboard (but avoid redirect loops)
+  if (isAuthRoute && token && !request.nextUrl.searchParams.has('redirect')) {
     const url = request.nextUrl.clone();
     url.pathname = '/dashboard';
+    url.searchParams.delete('redirect'); // Clean up URL
     return NextResponse.redirect(url);
   }
   

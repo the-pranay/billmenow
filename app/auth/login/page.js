@@ -16,13 +16,21 @@ export default function LoginPage() {
   });  const [showPassword, setShowPassword] = useState(false);
   const { login, loading, error } = useAuth();
   const router = useRouter();
-  const { success, error: showError } = useToast();
-  const handleSubmit = async (e) => {
+  const { success, error: showError } = useToast();  const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await login(formData.email, formData.password);
     if (result.success) {
       success(`Welcome back, ${result.user.firstName}!`);
-      router.push('/dashboard');
+      
+      // Wait a moment for the auth state to update
+      setTimeout(() => {
+        // Check if there's a redirect parameter in the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirectTo = urlParams.get('redirect') || '/dashboard';
+        
+        // Use window.location.href for production compatibility
+        window.location.href = redirectTo;
+      }, 100);
     } else {
       showError(result.error || 'Login failed');
     }

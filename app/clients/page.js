@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import withAuth from '../components/Auth/withAuth';
 import { useToast } from '../components/Utilities/Toast';
+import { clientsAPI } from '../lib/api';
 
 function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,20 +26,23 @@ function Clients() {
   // Load clients from API
   useEffect(() => {
     loadClients();
-  }, []);
-  const loadClients = async () => {
+  }, []);  const loadClients = async () => {
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await fetch('/api/clients', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      const data = await response.json();
+      const data = await clientsAPI.getAll();
       
-      if (data.success) {
+      if (data && data.success) {
+        setClients(data.clients || []);
+      } else {
+        toast.error('Failed to load clients');
+      }
+    } catch (error) {
+      console.error('Error loading clients:', error);
+      toast.error('Failed to load clients');
+    } finally {
+      setIsLoading(false);
+    }
+  };
         setClients(data.clients || []);
       } else {
         toast.error('Failed to load clients');

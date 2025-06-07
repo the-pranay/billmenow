@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import withAuth from '../components/Auth/withAuth';
 import { useToast } from '../components/Utilities/Toast';
+import { invoicesAPI } from '../lib/api';
 
 function Invoices() {
   const [activeTab, setActiveTab] = useState('all');
@@ -20,10 +21,9 @@ function Invoices() {
   const loadInvoices = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/invoices');
-      const data = await response.json();
+      const data = await invoicesAPI.getAll();
       
-      if (data.success) {
+      if (data && data.success) {
         setInvoices(data.invoices || []);
       } else {
         toast.error('Failed to load invoices');
