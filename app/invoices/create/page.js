@@ -264,12 +264,11 @@ function CreateInvoice() {
           contactDetails: user?.email || 'contact@billmenow.com'
         },
         invoiceId: invoice._id
-      };
-
-      const emailResponse = await fetch('/api/email/send', {
+      };      const emailResponse = await fetch('/api/email/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
         },
         body: JSON.stringify(emailData)
       });
