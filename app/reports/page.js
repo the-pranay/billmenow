@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -8,7 +8,6 @@ import {
   DollarSign, 
   Users, 
   FileText, 
-  Clock,
   ArrowLeft,
   Eye,
   PieChart,
@@ -30,15 +29,9 @@ function ReportsPage() {
     paymentStatusData: [],
     topClients: [],
     kpiCards: []
-  });
-  const toast = useToast();
+  });  const toast = useToast();
 
-  // Load reports data from API
-  useEffect(() => {
-    loadReportsData();
-  }, [dateRange]);
-
-  const loadReportsData = async () => {
+  const loadReportsData = useCallback(async () => {
     try {
       setIsLoading(true);
       const data = await reportsAPI.getAll();
@@ -54,7 +47,12 @@ function ReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
+
+  // Load reports data from API
+  useEffect(() => {
+    loadReportsData();
+  }, [dateRange, loadReportsData]);
 
   const exportToPDF = async () => {
     setIsExporting(true);
@@ -164,9 +162,8 @@ function ReportsPage() {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {kpiCards && kpiCards.map((kpi, index) => (
-              <div key={index} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">            {kpiCards && kpiCards.map((kpi) => (
+              <div key={kpi.id || kpi.title} className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{kpi.title}</p>
@@ -223,9 +220,8 @@ function ReportsPage() {
               </div>
 
               {/* Simple Bar Chart */}
-              <div className="space-y-4">
-                {revenueData && revenueData.map((data, index) => (
-                  <div key={index} className="flex items-center space-x-4">
+              <div className="space-y-4">                {revenueData && revenueData.map((data) => (
+                  <div key={data.month || data.id} className="flex items-center space-x-4">
                     <div className="w-8 text-sm text-gray-600 dark:text-gray-400">{data.month}</div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
@@ -259,9 +255,8 @@ function ReportsPage() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Payment Status</h2>
               </div>
 
-              <div className="space-y-4">
-                {paymentStatusData && paymentStatusData.map((status, index) => (
-                  <div key={index} className="flex items-center justify-between">
+              <div className="space-y-4">                {paymentStatusData && paymentStatusData.map((status) => (
+                  <div key={status.status || status.id} className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className={`w-3 h-3 rounded-full ${status.color || 'bg-gray-500'}`}></div>
                       <div>
@@ -301,9 +296,8 @@ function ReportsPage() {
                 <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Top Clients</h2>
               </div>
 
-              <div className="space-y-4">
-                {topClients.map((client, index) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
+              <div className="space-y-4">                {topClients.map((client) => (
+                  <div key={client.name || client.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-700 rounded-lg">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">{client.name}</p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">{client.invoices} invoices</p>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Settings, 
   Bell, 
@@ -64,11 +64,10 @@ function SettingsPage() {
     profileVisibility: 'private',
     analyticsSharing: false,
     dataCollection: 'minimal'
-  });
-  // Load settings data on component mount
+  });  // Load settings data on component mount
   useEffect(() => {
     loadSettingsData();
-  }, []);
+  }, [loadSettingsData]);
 
   // Apply theme changes when theme setting changes
   useEffect(() => {
@@ -101,8 +100,7 @@ function SettingsPage() {
       }
     }
   };
-
-  const loadSettingsData = async () => {
+  const loadSettingsData = useCallback(async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/user/settings', {
@@ -125,7 +123,7 @@ function SettingsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [error]);
 
   const handleSave = async () => {
     setIsSaving(true);
