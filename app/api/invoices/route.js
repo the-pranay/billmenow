@@ -72,7 +72,8 @@ export async function GET(request) {
       };
 
       summaryStats.forEach(stat => {
-        summary.total += stat.count;        summary.totalAmount += stat.totalAmount;
+        summary.total += stat.count;
+        summary.totalAmount += stat.totalAmount;
         
         if (stat._id === 'sent' || stat._id === 'viewed') {
           summary.pending += stat.count;
@@ -117,10 +118,13 @@ export async function POST(request) {
 
       const invoiceData = await request.json();
       const {
-        clientId,
+        client: clientId,  // Map 'client' field to 'clientId'
+        invoiceNumber: providedInvoiceNumber,
+        issueDate,
         items,
-        taxRate,
-        discountRate,
+        subtotal: providedSubtotal,
+        taxTotal: providedTaxTotal,
+        total: providedTotal,
         notes,
         dueDate,
         isRecurring,
@@ -148,15 +152,15 @@ export async function POST(request) {
         );
       }
 
-      // Validate items
-      let subtotal = 0;
+      // Validate items and use provided amounts or calculate them
+      let calculatedSubtotal = 0;
       const validatedItems = items.map(item => {
         if (!item.description || !item.quantity || !item.rate) {
           throw new Error('Each item must have description, quantity, and rate');
         }
         
-        const amount = item.quantity * item.rate;
-        subtotal += amount;
+        const amount = item.amount || (item.quantity * item.rate);
+        calculatedSubtotal += amount;
         
         return {
           description: item.description,
@@ -166,14 +170,15 @@ export async function POST(request) {
         };
       });
 
-      // Calculate totals
-      const taxAmount = subtotal * (taxRate / 100);
-      const discountAmount = subtotal * (discountRate / 100);
-      const total = subtotal + taxAmount - discountAmount;
+      // Use provided totals or calculated ones
+      const subtotal = providedSubtotal || calculatedSubtotal;
+      const taxTotal = providedTaxTotal || 0;
+      const discountAmount = 0; // Not used in current implementation
+      const total = providedTotal || (subtotal + taxTotal - discountAmount);
 
-      // Generate invoice number
+      // Use provided invoice number or generate one
       const invoiceCount = await Invoice.countDocuments({ userId: user.id });
-      const invoiceNumber = `INV-${Date.now()}-${String(invoiceCount + 1).padStart(3, '0')}`;
+      const invoiceNumber = providedInvoiceNumber || `INV-${Date.now()}-${String(invoiceCount + 1).padStart(3, '0')}`;
 
       // Create new invoice
       const newInvoice = new Invoice({
@@ -182,12 +187,11 @@ export async function POST(request) {
         invoiceNumber,
         items: validatedItems,
         subtotal,
-        taxRate,
-        taxAmount,
-        discountRate,
+        taxTotal,
         discountAmount,
         total,
         status: 'draft',
+        issueDate: issueDate ? new Date(issueDate) : new Date(),
         dueDate: dueDate ? new Date(dueDate) : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         notes,
         isRecurring,

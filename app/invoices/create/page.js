@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import withAuth from '../../components/Auth/withAuth';
 import { useToast } from '../../components/Utilities/Toast';
@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 
 function CreateInvoice() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     invoiceNumber: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
@@ -93,11 +94,24 @@ function CreateInvoice() {
   const [clients, setClients] = useState([]);
   const [isLoadingClients, setIsLoadingClients] = useState(true);
   const toast = useToast();
-
-  // Load clients from API
+  // Load clients from API and handle URL parameters
   useEffect(() => {
     loadClients();
   }, []);
+
+  // Handle client pre-selection from URL parameters
+  useEffect(() => {
+    const clientId = searchParams.get('clientId');
+    if (clientId && clients.length > 0) {
+      const preSelectedClient = clients.find(client => 
+        (client._id || client.id) === clientId
+      );
+      if (preSelectedClient) {
+        selectClient(preSelectedClient);
+        toast.success(`Client "${preSelectedClient.name}" has been pre-selected`);
+      }
+    }
+  }, [clients, searchParams]);
   const loadClients = async () => {
     try {
       setIsLoadingClients(true);

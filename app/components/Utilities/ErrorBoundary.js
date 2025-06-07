@@ -13,10 +13,17 @@ class ErrorBoundary extends Component {
     // Update state so the next render will show the fallback UI
     return { hasError: true };
   }
-
   componentDidCatch(error, errorInfo) {
-    // Log error for debugging
+    // Log error for debugging with more context
     console.error('Error caught by boundary:', error, errorInfo);
+    console.error('Component stack:', errorInfo.componentStack);
+    console.error('Error stack:', error.stack);
+    
+    // Also log to help identify the specific error
+    if (error.message && error.message.includes('fetch')) {
+      console.error('This appears to be a network/API error');
+    }
+    
     this.setState({
       error: error,
       errorInfo: errorInfo

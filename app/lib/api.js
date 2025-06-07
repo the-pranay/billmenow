@@ -12,10 +12,13 @@ export const apiCall = async (url, options = {}) => {
   };
 
   try {
+    console.log(`Making API call to: ${url}`, { options: defaultOptions });
     const response = await fetch(url, defaultOptions);
+    console.log(`API response status: ${response.status} for ${url}`);
     
     // If response is 401, token might be expired
     if (response.status === 401) {
+      console.warn('401 Unauthorized - clearing auth data');
       // Clear auth data and redirect to login
       localStorage.removeItem('billmenow_user');
       localStorage.removeItem('token');
@@ -26,15 +29,45 @@ export const apiCall = async (url, options = {}) => {
       return null;
     }
     
-    const data = await response.json();
+    // Handle different response types more safely
+    let data;
+    const contentType = response.headers.get('content-type');
+    
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('Failed to parse JSON response:', jsonError);
+        throw new Error('Invalid JSON response from server');
+      }
+    } else {
+      const text = await response.text();
+      console.error('Non-JSON response:', text);
+      throw new Error('Server returned non-JSON response');
+    }
+    
+    console.log(`API response data:`, data);
     
     if (!response.ok) {
-      throw new Error(data.error || `API Error: ${response.status}`);
+      const errorMessage = data?.error || `API Error: ${response.status}`;
+      console.error('API Error:', errorMessage, data);
+      throw new Error(errorMessage);
     }
     
     return data;
   } catch (error) {
-    console.error('API Call Error:', error);
+    console.error('API Call Error Details:', {
+      url,
+      error: error.message,
+      stack: error.stack,
+      options: defaultOptions
+    });
+    
+    // Re-throw with more context
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('Network error - please check your connection');
+    }
+    
     throw error;
   }
 };

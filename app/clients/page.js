@@ -72,9 +72,11 @@ function Clients() {
     setIsSubmitting(true);
     
     try {
+      console.log('Submitting client data:', formData);
       const result = await clientsAPI.create(formData);
+      console.log('Client creation result:', result);
 
-      if (result.success) {
+      if (result && result.success) {
         toast.success('Client added successfully!');
         setShowAddModal(false);
         setFormData({
@@ -86,13 +88,27 @@ function Clients() {
           notes: ''
         });
         // Reload clients
-        loadClients();
+        await loadClients();
       } else {
-        toast.error(result.error || 'Failed to add client');
+        console.error('Client creation failed:', result);
+        toast.error(result?.error || 'Failed to add client');
       }
     } catch (error) {
       console.error('Error adding client:', error);
-      toast.error('Failed to add client. Please try again.');
+      console.error('Error details:', {
+        message: error.message,
+        stack: error.stack,
+        formData: formData
+      });
+      
+      // More specific error messages
+      if (error.message.includes('fetch')) {
+        toast.error('Network error. Please check your connection and try again.');
+      } else if (error.message.includes('401')) {
+        toast.error('Authentication error. Please log in again.');
+      } else {
+        toast.error('Failed to add client. Please try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }

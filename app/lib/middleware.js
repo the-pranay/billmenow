@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { verifyToken } from './auth';
-import connectDB from './database';
+import { connectToDatabase } from './database';
 import User from './models/User';
 
 export const authMiddleware = async (request) => {
@@ -15,9 +15,7 @@ export const authMiddleware = async (request) => {
     const decoded = verifyToken(token);
     if (!decoded) {
       return { error: 'Invalid token', status: 401 };
-    }
-
-    await connectDB();
+    }    await connectToDatabase();
     const user = await User.findById(decoded.userId).select('-password');
     
     if (!user) {

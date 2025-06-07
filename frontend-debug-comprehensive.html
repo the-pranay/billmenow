@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Error Debug - Real User Simulation</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5; 
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        }
+        .test-section { 
+            margin-bottom: 30px; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 6px; 
+            background: #fafafa; 
+        }
+        .test-section h2 { 
+            margin-top: 0; 
+            color: #333; 
+            border-bottom: 2px solid #007bff; 
+            padding-bottom: 10px; 
+        }
+        .form-row { 
+            display: flex; 
+            gap: 15px; 
+            margin-bottom: 15px; 
+            align-items: center; 
+        }
+        .form-group { 
+            flex: 1; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #555; 
+        }
+        input, textarea, select { 
+            width: 100%; 
+            padding: 8px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 14px; 
+        }
+        button { 
+            background: #007bff; 
+            color: white; 
+            padding: 10px 20px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 14px; 
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .result { 
+            margin-top: 15px; 
+            padding: 10px; 
+            border-radius: 4px; 
+            font-family: monospace; 
+            font-size: 12px; 
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .log { 
+            background: #f8f9fa; 
+            border: 1px solid #dee2e6; 
+            padding: 10px; 
+            margin-top: 10px; 
+            white-space: pre-wrap; 
+            font-family: monospace; 
+            font-size: 11px; 
+            max-height: 200px; 
+            overflow-y: auto; 
+        }
+        .tab-buttons { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 20px; 
+        }
+        .tab-btn { 
+            padding: 8px 16px; 
+            border: 1px solid #ddd; 
+            background: #f8f9fa; 
+            cursor: pointer; 
+            border-radius: 4px; 
+        }
+        .tab-btn.active { 
+            background: #007bff; 
+            color: white; 
+        }
+        .tab-content { 
+            display: none; 
+        }
+        .tab-content.active { 
+            display: block; 
+        }
+        .status-indicator { 
+            display: inline-block; 
+            width: 10px; 
+            height: 10px; 
+            border-radius: 50%; 
+            margin-right: 8px; 
+        }
+        .status-green { background: #28a745; }
+        .status-red { background: #dc3545; }
+        .status-yellow { background: #ffc107; }
+        .iframe-container {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Frontend Error Debug - Real User Simulation</h1>
+        <p>This tool simulates real user interactions to identify the exact cause of frontend errors.</p>
+        
+        <div class="tab-buttons">
+            <div class="tab-btn active" onclick="showTab('client-test')">Client Creation Test</div>
+            <div class="tab-btn" onclick="showTab('invoice-test')">Invoice Creation Test</div>
+            <div class="tab-btn" onclick="showTab('app-test')">Live App Test</div>
+            <div class="tab-btn" onclick="showTab('api-test')">API Health Test</div>
+        </div>
+
+        <!-- Client Creation Test -->
+        <div id="client-test" class="tab-content active">
+            <div class="test-section">
+                <h2>🧪 Client Creation Error Reproduction</h2>
+                <p>Testing the exact user flow that leads to "Something went wrong" error</p>
+                
+                <form id="clientTestForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="clientName">Name *</label>
+                            <input type="text" id="clientName" name="name" value="Test Client" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="clientEmail">Email *</label>
+                            <input type="email" id="clientEmail" name="email" value="test@example.com" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="clientPhone">Phone</label>
+                            <input type="tel" id="clientPhone" name="phone" value="+1234567890">
+                        </div>
+                        <div class="form-group">
+                            <label for="clientCompany">Company</label>
+                            <input type="text" id="clientCompany" name="company" value="Test Company">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="clientAddress">Address</label>
+                        <textarea id="clientAddress" name="address" rows="2">123 Test Street, Test City</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="clientNotes">Notes</label>
+                        <textarea id="clientNotes" name="notes" rows="2">Test client notes</textarea>
+                    </div>
+                    
+                    <button type="submit" id="submitClientBtn">Test Client Creation</button>
+                </form>
+                
+                <div id="clientResult"></div>
+                <div id="clientLog" class="log"></div>
+            </div>
+        </div>
+
+        <!-- Invoice Creation Test -->
+        <div id="invoice-test" class="tab-content">
+            <div class="test-section">
+                <h2>📋 Invoice Creation Error Reproduction</h2>
+                <p>Testing the "Please select a client" validation error</p>
+                
+                <div class="form-group">
+                    <label>First, load available clients:</label>
+                    <button onclick="loadClientsForInvoice()" id="loadClientsBtn">Load Clients</button>
+                </div>
+                
+                <form id="invoiceTestForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="invoiceClient">Client *</label>
+                            <select id="invoiceClient" name="clientId" required>
+                                <option value="">Select a client...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="invoiceDate">Invoice Date</label>
+                            <input type="date" id="invoiceDate" name="issueDate" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="invoiceDueDate">Due Date</label>
+                            <input type="date" id="invoiceDueDate" name="dueDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="invoiceAmount">Amount</label>
+                            <input type="number" id="invoiceAmount" name="amount" value="100" step="0.01" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="invoiceDescription">Description</label>
+                        <textarea id="invoiceDescription" name="description" rows="2">Test invoice description</textarea>
+                    </div>
+                    
+                    <button type="submit" id="submitInvoiceBtn">Test Invoice Creation</button>
+                    <button type="button" onclick="testEmptyClient()">Test Empty Client (Should show error)</button>
+                </form>
+                
+                <div id="invoiceResult"></div>
+                <div id="invoiceLog" class="log"></div>
+            </div>
+        </div>
+
+        <!-- Live App Test -->
+        <div id="app-test" class="tab-content">
+            <div class="test-section">
+                <h2>🌐 Live Application Test</h2>
+                <p>Test the actual frontend application</p>
+                
+                <div class="form-group">
+                    <label>App URL:</label>
+                    <input type="url" id="appUrl" value="http://localhost:3001" style="display: inline-block; width: 300px;">
+                    <button onclick="openApp()" style="margin-left: 10px;">Open App</button>
+                    <button onclick="checkAppHealth()" style="margin-left: 10px;">Check Health</button>
+                </div>
+                
+                <div id="appResult"></div>
+                
+                <div class="iframe-container">
+                    <iframe id="appFrame" src="http://localhost:3001"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Health Test -->
+        <div id="api-test" class="tab-content">
+            <div class="test-section">
+                <h2>⚡ API Health & Connectivity Test</h2>
+                <p>Check all API endpoints and their responses</p>
+                
+                <div class="form-row">
+                    <button onclick="testAllAPIs()">Test All APIs</button>
+                    <button onclick="testClientAPI()">Test Clients API</button>
+                    <button onclick="testInvoiceAPI()">Test Invoices API</button>
+                    <button onclick="testAuthAPI()">Test Auth API</button>
+                </div>
+                
+                <div id="apiResult"></div>
+                <div id="apiLog" class="log"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001';
+        let authToken = null;
+
+        // Logging utilities
+        function log(message, section = 'client') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById(`${section}Log`);
+            if (logElement) {
+                logElement.textContent += `${timestamp}: ${message}\n`;
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+            console.log(`[${section.toUpperCase()}] ${message}`);
+        }
+
+        function showResult(message, type, section = 'client') {
+            const resultElement = document.getElementById(`${section}Result`);
+            if (resultElement) {
+                resultElement.className = `result ${type}`;
+                resultElement.textContent = message;
+            }
+        }
+
+        // Tab management
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(tabId).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Authentication simulation
+        async function getAuthToken() {
+            if (authToken) return authToken;
+            
+            try {
+                // Try to use existing token from localStorage simulation
+                const response = await fetch(`${API_BASE}/api/auth/verify`, {
+                    headers: { 'Authorization': 'Bearer fake-token' }
+                });
+                
+                if (!response.ok) {
+                    // Simulate login
+                    const loginResponse = await fetch(`${API_BASE}/api/auth/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: 'test@example.com',
+                            password: 'password123'
+                        })
+                    });
+                    
+                    if (loginResponse.ok) {
+                        const loginData = await loginResponse.json();
+                        authToken = loginData.token;
+                        return authToken;
+                    }
+                }
+                
+                return 'simulated-token';
+            } catch (error) {
+                log(`Auth error: ${error.message}`, 'client');
+                return 'simulated-token';
+            }
+        }
+
+        // Client creation test
+        document.getElementById('clientTestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitClientBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Testing...';
+            
+            const formData = new FormData(e.target);
+            const clientData = Object.fromEntries(formData.entries());
+            
+            log(`Testing client creation with data: ${JSON.stringify(clientData)}`, 'client');
+            
+            try {
+                // Test 1: Direct API call
+                log('Step 1: Testing direct API call...', 'client');
+                const apiResponse = await fetch(`${API_BASE}/api/clients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${await getAuthToken()}`
+                    },
+                    body: JSON.stringify(clientData)
+                });
+                
+                log(`API Response status: ${apiResponse.status}`, 'client');
+                const apiResult = await apiResponse.json();
+                log(`API Response: ${JSON.stringify(apiResult, null, 2)}`, 'client');
+                
+                if (apiResult.success) {
+                    showResult('✅ Direct API call successful', 'success', 'client');
+                    
+                    // Test 2: Simulate frontend API utility
+                    log('Step 2: Testing frontend API utility simulation...', 'client');
+                    await testFrontendAPIUtil(clientData);
+                    
+                } else {
+                    showResult(`❌ API Error: ${apiResult.error}`, 'error', 'client');
+                }
+                
+            } catch (error) {
+                log(`Error: ${error.message}`, 'client');
+                showResult(`❌ Network Error: ${error.message}`, 'error', 'client');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Test Client Creation';
+        });
+
+        // Test frontend API utility simulation
+        async function testFrontendAPIUtil(clientData) {
+            try {
+                log('Simulating frontend clientsAPI.create() call...', 'client');
+                
+                // Simulate the exact frontend API call pattern
+                const token = localStorage.getItem('token') || await getAuthToken();
+                
+                const response = await fetch(`${API_BASE}/api/clients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(clientData)
+                });
+                
+                if (!response.ok) {
+                    log(`Frontend simulation: Response not OK (${response.status})`, 'client');
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                log(`Frontend simulation result: ${JSON.stringify(result)}`, 'client');
+                
+                // Test what happens when frontend processes the result
+                if (result.success) {
+                    log('Frontend would show: Client added successfully!', 'client');
+                    showResult('✅ Frontend simulation successful', 'success', 'client');
+                } else {
+                    log(`Frontend would show error: ${result.error}`, 'client');
+                    showResult(`⚠️ Frontend would show: ${result.error}`, 'warning', 'client');
+                }
+                
+            } catch (error) {
+                log(`Frontend simulation error: ${error.message}`, 'client');
+                log('This could trigger ErrorBoundary!', 'client');
+                showResult(`🚨 This error could trigger "Something went wrong": ${error.message}`, 'error', 'client');
+            }
+        }
+
+        // Invoice creation tests
+        async function loadClientsForInvoice() {
+            const btn = document.getElementById('loadClientsBtn');
+            btn.disabled = true;
+            btn.textContent = 'Loading...';
+            
+            try {
+                log('Loading clients for invoice creation...', 'invoice');
+                
+                const response = await fetch(`${API_BASE}/api/clients`, {
+                    headers: {
+                        'Authorization': `Bearer ${await getAuthToken()}`
+                    }
+                });
+                
+                const result = await response.json();
+                log(`Clients loaded: ${JSON.stringify(result, null, 2)}`, 'invoice');
+                
+                const clientSelect = document.getElementById('invoiceClient');
+                clientSelect.innerHTML = '<option value="">Select a client...</option>';
+                
+                if (result.success && result.clients) {
+                    result.clients.forEach(client => {
+                        const option = document.createElement('option');
+                        option.value = client._id;
+                        option.textContent = `${client.name} (${client.email})`;
+                        clientSelect.appendChild(option);
+                    });
+                    showResult(`✅ Loaded ${result.clients.length} clients`, 'success', 'invoice');
+                } else {
+                    showResult('❌ Failed to load clients', 'error', 'invoice');
+                }
+                
+            } catch (error) {
+                log(`Error loading clients: ${error.message}`, 'invoice');
+                showResult(`❌ Error: ${error.message}`, 'error', 'invoice');
+            }
+            
+            btn.disabled = false;
+            btn.textContent = 'Load Clients';
+        }
+
+        function testEmptyClient() {
+            const clientSelect = document.getElementById('invoiceClient');
+            clientSelect.value = '';
+            
+            log('Testing validation with empty client selection...', 'invoice');
+            
+            // Simulate frontend validation
+            if (!clientSelect.value) {
+                log('Frontend validation would show: Please select a client', 'invoice');
+                showResult('⚠️ Frontend validation: "Please select a client"', 'warning', 'invoice');
+            }
+        }
+
+        // Set default dates
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+            
+            document.getElementById('invoiceDate').value = today;
+            document.getElementById('invoiceDueDate').value = nextWeek;
+        });
+
+        document.getElementById('invoiceTestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitInvoiceBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Testing...';
+            
+            const formData = new FormData(e.target);
+            const invoiceData = Object.fromEntries(formData.entries());
+            
+            log(`Testing invoice creation: ${JSON.stringify(invoiceData)}`, 'invoice');
+            
+            // Test frontend validation first
+            if (!invoiceData.clientId) {
+                log('Frontend validation failed: No client selected', 'invoice');
+                showResult('⚠️ Validation: "Please select a client"', 'warning', 'invoice');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Test Invoice Creation';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/invoices`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${await getAuthToken()}`
+                    },
+                    body: JSON.stringify(invoiceData)
+                });
+                
+                const result = await response.json();
+                log(`Invoice API response: ${JSON.stringify(result, null, 2)}`, 'invoice');
+                
+                if (result.success) {
+                    showResult('✅ Invoice creation successful', 'success', 'invoice');
+                } else {
+                    showResult(`❌ Invoice creation failed: ${result.error}`, 'error', 'invoice');
+                }
+                
+            } catch (error) {
+                log(`Invoice creation error: ${error.message}`, 'invoice');
+                showResult(`❌ Error: ${error.message}`, 'error', 'invoice');
+            }
+            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Test Invoice Creation';
+        });
+
+        // App testing
+        function openApp() {
+            const url = document.getElementById('appUrl').value;
+            window.open(url, '_blank');
+        }
+
+        async function checkAppHealth() {
+            const url = document.getElementById('appUrl').value;
+            try {
+                log('Checking app health...', 'app');
+                const response = await fetch(url);
+                if (response.ok) {
+                    showResult('✅ App is accessible', 'success', 'app');
+                } else {
+                    showResult(`❌ App returned ${response.status}`, 'error', 'app');
+                }
+            } catch (error) {
+                log(`App health check error: ${error.message}`, 'app');
+                showResult(`❌ App not accessible: ${error.message}`, 'error', 'app');
+            }
+        }
+
+        // API health tests
+        async function testAllAPIs() {
+            log('Testing all API endpoints...', 'api');
+            await testClientAPI();
+            await testInvoiceAPI();
+            await testAuthAPI();
+        }
+
+        async function testClientAPI() {
+            try {
+                log('Testing Clients API...', 'api');
+                const response = await fetch(`${API_BASE}/api/clients`, {
+                    headers: { 'Authorization': `Bearer ${await getAuthToken()}` }
+                });
+                const result = await response.json();
+                log(`Clients API: ${response.status} - ${JSON.stringify(result)}`, 'api');
+            } catch (error) {
+                log(`Clients API error: ${error.message}`, 'api');
+            }
+        }
+
+        async function testInvoiceAPI() {
+            try {
+                log('Testing Invoices API...', 'api');
+                const response = await fetch(`${API_BASE}/api/invoices`, {
+                    headers: { 'Authorization': `Bearer ${await getAuthToken()}` }
+                });
+                const result = await response.json();
+                log(`Invoices API: ${response.status} - ${JSON.stringify(result)}`, 'api');
+            } catch (error) {
+                log(`Invoices API error: ${error.message}`, 'api');
+            }
+        }
+
+        async function testAuthAPI() {
+            try {
+                log('Testing Auth API...', 'api');
+                const response = await fetch(`${API_BASE}/api/auth/verify`, {
+                    headers: { 'Authorization': `Bearer ${await getAuthToken()}` }
+                });
+                const result = await response.json();
+                log(`Auth API: ${response.status} - ${JSON.stringify(result)}`, 'api');
+            } catch (error) {
+                log(`Auth API error: ${error.message}`, 'api');
+            }
+        }
+
+        // Initialize
+        log('Frontend Error Debug Tool initialized', 'client');
+        log('Ready to test user scenarios that trigger errors', 'client');
+    </script>
+</body>
+</html>
