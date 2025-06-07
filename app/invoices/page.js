@@ -17,15 +17,18 @@ function Invoices() {  const [activeTab, setActiveTab] = useState('all');
   // Load invoices from API
   useEffect(() => {
     loadInvoices();
-  }, []);
-  const loadInvoices = async () => {
+  }, []);  const loadInvoices = async () => {
     try {
       setIsLoading(true);
       const data = await invoicesAPI.getAll();
       
+      console.log('Invoice API Response:', data); // Debug log
+      
       if (data && data.success) {
+        console.log('Invoices loaded:', data.invoices); // Debug log
         setInvoices(data.invoices || []);
       } else {
+        console.error('Failed to load invoices:', data);
         toast.error('Failed to load invoices');
       }
     } catch (error) {
@@ -84,21 +87,26 @@ function Invoices() {  const [activeTab, setActiveTab] = useState('all');
       month: 'short',
       year: 'numeric'
     });
-  };
-  const filteredInvoices = invoices.filter(invoice => {
+  };  const filteredInvoices = invoices.filter(invoice => {
     let matchesTab = false;
     if (activeTab === 'all') {
-      matchesTab = true;    } else if (activeTab === 'pending') {
+      matchesTab = true;
+    } else if (activeTab === 'pending') {
       matchesTab = invoice.status && ['sent', 'viewed'].includes(invoice.status);
     } else if (activeTab === 'draft') {
       matchesTab = !invoice.status || invoice.status === 'draft';
     } else {
       matchesTab = invoice.status === activeTab;
     }
-      const matchesSearch = (invoice.client && invoice.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         (invoice.id && invoice.id.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesSearch = (
+      (invoice.clientId?.name && invoice.clientId.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (invoice.client?.name && invoice.client.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (invoice.invoiceNumber && invoice.invoiceNumber.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (invoice._id && invoice._id.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
     return matchesTab && matchesSearch;
-  });  const tabs = [
+  });const tabs = [
     { id: 'all', label: 'All Invoices', count: invoices.length },
     { id: 'paid', label: 'Paid', count: invoices.filter(inv => inv.status === 'paid').length },
     { id: 'pending', label: 'Pending', count: invoices.filter(inv => inv.status && ['sent', 'viewed'].includes(inv.status)).length },
@@ -219,27 +227,29 @@ function Invoices() {  const [activeTab, setActiveTab] = useState('all');
                 </tr>
               </thead>
               <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">                {filteredInvoices.map((invoice, index) => (
-                  <tr key={invoice.id || invoice._id || invoice.invoiceNumber || index} className="hover:bg-gray-50 dark:hover:bg-slate-700"><td className="px-6 py-4 whitespace-nowrap">
+                  <tr key={invoice.id || invoice._id || invoice.invoiceNumber || index} className="hover:bg-gray-50 dark:hover:bg-slate-700">                    <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {invoice.id || invoice.invoiceNumber || 'N/A'}
+                          {invoice.invoiceNumber || invoice._id || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Created {invoice.createdDate ? formatDate(invoice.createdDate) : 'N/A'}
+                          Created {invoice.createdAt ? formatDate(invoice.createdAt) : 'N/A'}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">                      <div>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {invoice.client || 'N/A'}
+                          {invoice.clientId?.name || invoice.client?.name || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {invoice.clientEmail || ''}
+                          {invoice.clientId?.email || invoice.client?.email || ''}
                         </div>
                       </div>
-                    </td>                    <td className="px-6 py-4 whitespace-nowrap">
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {invoice.amount ? formatCurrency(invoice.amount) : formatCurrency(invoice.total || 0)}
+                        {formatCurrency(invoice.total || 0)}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status || 'draft')}`}>

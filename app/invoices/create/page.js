@@ -187,9 +187,9 @@ function CreateInvoice() {
     
     setIsSubmitting(true);
     
-    try {      // Validate required fields
-      if (!formData.clientId) {
-        toast.error('Please select a client');
+    try {      // Validate required fields - allow either existing client or new client details
+      if (!formData.clientId && (!formData.clientName || !formData.clientEmail)) {
+        toast.error('Please select an existing client or fill in new client details (name and email required)');
         setIsSubmitting(false);
         return;
       }
@@ -198,15 +198,36 @@ function CreateInvoice() {
         toast.error('Please add at least one item');
         setIsSubmitting(false);
         return;
-      }
-
-      // Calculate totals
+      }      // Calculate totals
       const subtotal = calculateSubtotal();
       const taxAmount = calculateTax();
       const discountAmount = subtotal * formData.discount / 100;
-      const total = subtotal + taxAmount - discountAmount;      // Prepare invoice data with correct field mapping for backend
+      const total = subtotal + taxAmount - discountAmount;
+
+      let clientId = formData.clientId;
+
+      // If no clientId, create a new client first
+      if (!clientId && formData.clientName && formData.clientEmail) {
+        const clientData = {
+          name: formData.clientName,
+          email: formData.clientEmail,
+          address: formData.clientAddress || '',
+          phone: '', // Default empty
+          company: '' // Default empty
+        };
+
+        const clientResult = await clientsAPI.create(clientData);
+        if (clientResult.success) {
+          clientId = clientResult.client._id || clientResult.client.id;
+          toast.success('New client created successfully!');
+        } else {
+          toast.error('Failed to create new client');
+          setIsSubmitting(false);
+          return;
+        }
+      }      // Prepare invoice data with correct field mapping for backend
       const invoiceData = {
-        client: formData.clientId, // Backend expects 'client' not 'clientId'
+        client: clientId, // Backend expects 'client' field and maps it to 'clientId'
         invoiceNumber: formData.invoiceNumber,
         issueDate: formData.issueDate,
         dueDate: formData.dueDate,
