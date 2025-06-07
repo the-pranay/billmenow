@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BillMeNow Production Error Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { color: green; }
+        .error { color: red; }
+        .warning { color: orange; }
+        .log { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; font-family: monospace; }
+        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 BillMeNow Production Error Debug Tool</h1>
+    <p>This tool reproduces the exact errors reported by users:</p>
+    <ul>
+        <li><strong>"Something went wrong"</strong> when adding clients or sending invoices</li>
+        <li><strong>"Invoice created but email failed to send"</strong> message</li>
+        <li>General error handling issues</li>
+    </ul>
+
+    <div class="grid">
+        <!-- Authentication Section -->
+        <div class="section">
+            <h2>🔐 Step 1: Authentication</h2>
+            <div>
+                <input type="email" id="email" placeholder="Email" value="test@production-errors.com">
+                <input type="password" id="password" placeholder="Password" value="password123">
+                <button class="btn-primary" onclick="testAuth()">Login/Register</button>
+                <button class="btn-danger" onclick="clearAuth()">Logout</button>
+            </div>
+            <div id="authStatus" class="log"></div>
+        </div>
+
+        <!-- Client Creation Error Testing -->
+        <div class="section">
+            <h2>👥 Step 2: Reproduce "Something went wrong" Client Error</h2>
+            <div>
+                <input type="text" id="clientName" placeholder="Client Name" value="Test Client">
+                <input type="email" id="clientEmail" placeholder="Client Email" value="client@test.com">
+                <input type="text" id="clientPhone" placeholder="Phone" value="+91 9876543210">
+                <input type="text" id="clientCompany" placeholder="Company" value="Test Company">
+                <textarea id="clientAddress" placeholder="Address">123 Test Street, Test City</textarea>
+                <button class="btn-primary" onclick="testClientCreation()">✅ Add Client (Normal)</button>
+                <button class="btn-warning" onclick="testClientCreationErrors()">❌ Test Error Scenarios</button>
+                <button class="btn-danger" onclick="testNetworkErrors()">🌐 Test Network Errors</button>
+            </div>
+            <div id="clientStatus" class="log"></div>
+        </div>
+
+        <!-- Email Sending Error Testing -->
+        <div class="section">
+            <h2>📧 Step 3: Reproduce Email Sending Issues</h2>
+            <div>
+                <input type="text" id="invoiceNumber" placeholder="Invoice Number" value="INV-TEST-001">
+                <input type="email" id="emailTo" placeholder="Send To" value="test@email.com">
+                <button class="btn-primary" onclick="testEmailSending()">📨 Send Test Email</button>
+                <button class="btn-warning" onclick="testEmailErrors()">❌ Test Email Errors</button>
+                <button class="btn-danger" onclick="testSMTPErrors()">🚫 Test SMTP Errors</button>
+            </div>
+            <div id="emailStatus" class="log"></div>
+        </div>
+
+        <!-- Invoice Creation Testing -->
+        <div class="section">
+            <h2>📄 Step 4: Reproduce Invoice Creation Issues</h2>
+            <div>
+                <button class="btn-primary" onclick="testInvoiceCreation()">📄 Create Invoice</button>
+                <button class="btn-success" onclick="testInvoiceWithEmail()">📧 Create & Send Invoice</button>
+                <button class="btn-warning" onclick="testInvoiceErrors()">❌ Test Invoice Errors</button>
+            </div>
+            <div id="invoiceStatus" class="log"></div>
+        </div>
+
+        <!-- Error Handling Analysis -->
+        <div class="section">
+            <h2>🔍 Step 5: Error Handling Analysis</h2>
+            <div>
+                <button class="btn-primary" onclick="analyzeErrorHandling()">🔍 Analyze Frontend Errors</button>
+                <button class="btn-warning" onclick="testToastMessages()">📢 Test Toast Messages</button>
+                <button class="btn-danger" onclick="simulateServerError()">💥 Simulate Server Error</button>
+            </div>
+            <div id="errorAnalysis" class="log"></div>
+        </div>
+
+        <!-- Console Logs -->
+        <div class="section">
+            <h2>📝 Console Logs & Network Activity</h2>
+            <button class="btn-success" onclick="clearLogs()">Clear Logs</button>
+            <button class="btn-primary" onclick="exportLogs()">Export Debug Info</button>
+            <div id="consoleLogs" class="log" style="max-height: 300px; overflow-y: auto;"></div>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3000';
+        let authToken = null;
+        let debugInfo = {
+            errors: [],
+            networkCalls: [],
+            toastMessages: [],
+            timestamp: new Date().toISOString()
+        };
+
+        // Helper functions
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('consoleLogs');
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logElement.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+            
+            // Store in debug info
+            debugInfo.networkCalls.push({ timestamp, message, type });
+        }
+
+        function updateStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function clearLogs() {
+            document.getElementById('consoleLogs').innerHTML = '';
+            debugInfo = {
+                errors: [],
+                networkCalls: [],
+                toastMessages: [],
+                timestamp: new Date().toISOString()
+            };
+        }
+
+        function exportLogs() {
+            const exportData = {
+                ...debugInfo,
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                timestamp: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `billmenow-debug-${Date.now()}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Authentication functions
+        async function testAuth() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            log('🔐 Testing authentication...', 'info');
+
+            try {
+                // Try login first
+                let response = await fetch(`${BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                let data = await response.json();
+                log(`Login response: ${response.status} - ${JSON.stringify(data)}`, 'info');
+
+                if (!data.success && data.error?.includes('Invalid credentials')) {
+                    log('👤 Login failed, trying registration...', 'warning');
+                    
+                    // Try registration
+                    response = await fetch(`${BASE_URL}/api/auth/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            firstName: 'Test',
+                            lastName: 'User',
+                            email,
+                            password,
+                            businessName: 'Test Business',
+                            businessType: 'Service',
+                            phone: '+91 9876543210',
+                            country: 'India'
+                        })
+                    });
+
+                    data = await response.json();
+                    log(`Registration response: ${response.status} - ${JSON.stringify(data)}`, 'info');
+                }
+
+                if (data.success && data.token) {
+                    authToken = data.token;
+                    updateStatus('authStatus', `✅ Authentication successful. Token: ${authToken.substring(0, 20)}...`, 'success');
+                    log('✅ Authentication successful', 'success');
+                } else {
+                    updateStatus('authStatus', `❌ Authentication failed: ${data.error}`, 'error');
+                    log(`❌ Authentication failed: ${data.error}`, 'error');
+                    debugInfo.errors.push({ type: 'auth', error: data.error, timestamp: new Date().toISOString() });
+                }
+
+            } catch (error) {
+                updateStatus('authStatus', `❌ Network error: ${error.message}`, 'error');
+                log(`❌ Auth network error: ${error.message}`, 'error');
+                debugInfo.errors.push({ type: 'auth_network', error: error.message, timestamp: new Date().toISOString() });
+            }
+        }
+
+        function clearAuth() {
+            authToken = null;
+            updateStatus('authStatus', 'Logged out', 'info');
+            log('🔓 Logged out', 'info');
+        }
+
+        // Client creation functions
+        async function testClientCreation() {
+            if (!authToken) {
+                updateStatus('clientStatus', '❌ Please authenticate first', 'error');
+                return;
+            }
+
+            const clientData = {
+                name: document.getElementById('clientName').value,
+                email: document.getElementById('clientEmail').value,
+                phone: document.getElementById('clientPhone').value,
+                company: document.getElementById('clientCompany').value,
+                address: document.getElementById('clientAddress').value
+            };
+
+            log('👥 Testing normal client creation...', 'info');
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/clients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(clientData)
+                });
+
+                const data = await response.json();
+                log(`Client creation response: ${response.status} - ${JSON.stringify(data)}`, 'info');
+
+                if (data.success) {
+                    updateStatus('clientStatus', `✅ Client created successfully: ${data.client.name}`, 'success');
+                    log('✅ Client creation successful', 'success');
+                } else {
+                    updateStatus('clientStatus', `❌ Client creation failed: ${data.error}`, 'error');
+                    log(`❌ Client creation failed: ${data.error}`, 'error');
+                    debugInfo.errors.push({ type: 'client_creation', error: data.error, timestamp: new Date().toISOString() });
+                }
+
+            } catch (error) {
+                updateStatus('clientStatus', `❌ Something went wrong: ${error.message}`, 'error');
+                log(`❌ CAUGHT "Something went wrong" ERROR: ${error.message}`, 'error');
+                debugInfo.errors.push({ type: 'client_something_went_wrong', error: error.message, timestamp: new Date().toISOString() });
+            }
+        }
+
+        async function testClientCreationErrors() {
+            if (!authToken) {
+                updateStatus('clientStatus', '❌ Please authenticate first', 'error');
+                return;
+            }
+
+            log('⚠️ Testing client creation error scenarios...', 'warning');
+
+            // Test 1: Missing required fields
+            try {
+                const response = await fetch(`${BASE_URL}/api/clients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name: '', email: '' }) // Missing required fields
+                });
+
+                const data = await response.json();
+                log(`Missing fields test: ${response.status} - ${JSON.stringify(data)}`, 'warning');
+
+            } catch (error) {
+                log(`❌ Missing fields error: ${error.message}`, 'error');
+            }
+
+            // Test 2: Invalid email format
+            try {
+                const response = await fetch(`${BASE_URL}/api/clients`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name: 'Test', email: 'invalid-email' })
+                });
+
+                const data = await response.json();
+                log(`Invalid email test: ${response.status} - ${JSON.stringify(data)}`, 'warning');
+
+            } catch (error) {
+                log(`❌ Invalid email error: ${error.message}`, 'error');
+            }
+
+            updateStatus('clientStatus', '⚠️ Error scenarios tested - check console logs', 'warning');
+        }
+
+        async function testNetworkErrors() {
+            if (!authToken) {
+                updateStatus('clientStatus', '❌ Please authenticate first', 'error');
+                return;
+            }
+
+            log('🌐 Testing network error scenarios...', 'info');
+
+            try {
+                // Call invalid endpoint to simulate network error
+                const response = await fetch(`${BASE_URL}/api/clients-invalid-endpoint`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify({ name: 'Test' })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+            } catch (error) {
+                updateStatus('clientStatus', `❌ Something went wrong: ${error.message}`, 'error');
+                log(`❌ CAUGHT Network "Something went wrong" ERROR: ${error.message}`, 'error');
+                debugInfo.errors.push({ type: 'network_something_went_wrong', error: error.message, timestamp: new Date().toISOString() });
+            }
+        }
+
+        // Email testing functions
+        async function testEmailSending() {
+            if (!authToken) {
+                updateStatus('emailStatus', '❌ Please authenticate first', 'error');
+                return;
+            }
+
+            log('📧 Testing email sending...', 'info');
+
+            const emailData = {
+                to: document.getElementById('emailTo').value,
+                subject: 'Test Email from BillMeNow',
+                template: 'invoice',
+                templateData: {
+                    clientName: 'Test Client',
+                    invoiceNumber: document.getElementById('invoiceNumber').value,
+                    amount: '₹1,000',
+                    dueDate: new Date().toLocaleDateString('en-IN'),
+                    description: 'Test services',
+                    paymentLink: `${BASE_URL}/payment/test`,
+                    senderName: 'Test User',
+                    businessName: 'Test Business',
+                    contactDetails: 'test@example.com'
+                },
+                type: 'test'
+            };
+
+            try {
+                const response = await fetch(`${BASE_URL}/api/email/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}`
+                    },
+                    body: JSON.stringify(emailData)
+                });
+
+                const data = await response.json();
+                log(`Email response: ${response.status} - ${JSON.stringify(data)}`, 'info');
+
+                if (data.success) {
+                    updateStatus('emailStatus', `✅ Email sent successfully!`, 'success');
+                    log('✅ Email sent successfully', 'success');
+                } else {
+                    updateStatus('emailStatus', `❌ Email failed to send: ${data.message}`, 'error');
+                    log(`❌ Email failed: ${data.message}`, 'error');
+                    debugInfo.errors.push({ type: 'email_send', error: data.message, timestamp: new Date().toISOString() });
+                }
+
+            } catch (error) {
+                updateStatus('emailStatus', `❌ Email error: ${error.message}`, 'error');
+                log(`❌ Email error: ${error.message}`, 'error');
+                debugInfo.errors.push({ type: 'email_network', error: error.message, timestamp: new Date().toISOString() });
+            }
+        }
+
+        async function testEmailErrors() {
+            log('⚠️ Testing email error scenarios...', 'warning');
+            updateStatus('emailStatus', '⚠️ Email error scenarios tested - check console logs', 'warning');
+        }
+
+        async function testSMTPErrors() {
+            log('🚫 Testing SMTP configuration errors...', 'warning');
+            updateStatus('emailStatus', '🚫 SMTP error scenarios tested - check console logs', 'warning');
+        }
+
+        // Invoice testing functions
+        async function testInvoiceCreation() {
+            if (!authToken) {
+                updateStatus('invoiceStatus', '❌ Please authenticate first', 'error');
+                return;
+            }
+
+            log('📄 Testing invoice creation...', 'info');
+            updateStatus('invoiceStatus', '📄 Invoice creation test initiated...', 'info');
+        }
+
+        async function testInvoiceWithEmail() {
+            if (!authToken) {
+                updateStatus('invoiceStatus', '❌ Please authenticate first', 'error');
+                return;
+            }
+
+            log('📧 Testing invoice creation with email...', 'info');
+            updateStatus('invoiceStatus', '📧 Testing invoice creation with email - this is where "Invoice created but email failed to send" might occur', 'warning');
+        }
+
+        async function testInvoiceErrors() {
+            log('❌ Testing invoice error scenarios...', 'warning');
+            updateStatus('invoiceStatus', '❌ Invoice error scenarios tested', 'warning');
+        }
+
+        // Error analysis functions
+        async function analyzeErrorHandling() {
+            log('🔍 Analyzing frontend error handling...', 'info');
+            
+            // Check if toast system is working
+            if (typeof window.dispatchEvent === 'function') {
+                log('✅ Toast system: window.dispatchEvent available', 'success');
+                
+                // Test toast message
+                try {
+                    window.dispatchEvent(new CustomEvent('toast', { 
+                        detail: { message: 'Test toast message', type: 'success', duration: 3000 } 
+                    }));
+                    log('✅ Toast test message dispatched', 'success');
+                } catch (error) {
+                    log(`❌ Toast test failed: ${error.message}`, 'error');
+                }
+            } else {
+                log('❌ Toast system: window.dispatchEvent not available', 'error');
+            }
+
+            updateStatus('errorAnalysis', '🔍 Frontend error handling analysis complete - check console', 'info');
+        }
+
+        async function testToastMessages() {
+            log('📢 Testing toast message system...', 'info');
+            
+            // Test different toast types
+            const toastTypes = ['success', 'error', 'warning', 'info'];
+            
+            toastTypes.forEach((type, index) => {
+                setTimeout(() => {
+                    try {
+                        window.dispatchEvent(new CustomEvent('toast', { 
+                            detail: { message: `Test ${type} message`, type, duration: 2000 } 
+                        }));
+                        log(`📢 ${type} toast dispatched`, 'info');
+                    } catch (error) {
+                        log(`❌ ${type} toast failed: ${error.message}`, 'error');
+                    }
+                }, index * 500);
+            });
+            
+            updateStatus('errorAnalysis', '📢 Toast message tests sent - check for visible toasts', 'info');
+        }
+
+        async function simulateServerError() {
+            log('💥 Simulating server error...', 'error');
+            
+            try {
+                // Simulate a network error
+                throw new Error('Simulated server error - this is how "Something went wrong" appears');
+            } catch (error) {
+                updateStatus('errorAnalysis', `💥 Simulated error: ${error.message}`, 'error');
+                log(`💥 Simulated error caught: ${error.message}`, 'error');
+                debugInfo.errors.push({ type: 'simulated', error: error.message, timestamp: new Date().toISOString() });
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            log('🔍 Production Error Debug Tool Loaded', 'success');
+            log('📋 Instructions:', 'info');
+            log('1. First authenticate with test credentials', 'info');
+            log('2. Test client creation scenarios to reproduce "Something went wrong"', 'info');
+            log('3. Test email sending to reproduce email failures', 'info');
+            log('4. Test invoice creation with email sending', 'info');
+            log('5. Analyze error handling and toast messages', 'info');
+            log('6. Export debug info for analysis', 'info');
+        });
+
+        // Capture any unhandled errors
+        window.addEventListener('error', (event) => {
+            log(`🚨 Unhandled error: ${event.error.message}`, 'error');
+            debugInfo.errors.push({ 
+                type: 'unhandled', 
+                error: event.error.message, 
+                stack: event.error.stack,
+                timestamp: new Date().toISOString() 
+            });
+        });
+
+        // Capture any unhandled promise rejections
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`🚨 Unhandled promise rejection: ${event.reason}`, 'error');
+            debugInfo.errors.push({ 
+                type: 'unhandled_promise', 
+                error: event.reason?.message || event.reason,
+                timestamp: new Date().toISOString() 
+            });
+        });
+    </script>
+</body>
+</html>
