@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Code, Copy, CheckCircle, Play, Book, Key, Globe, Lock } from 'lucide-react'
+import { Code, Copy, CheckCircle, Play, Book, Key } from 'lucide-react'
 
 export default function APIPage() {
   const [activeEndpoint, setActiveEndpoint] = useState('invoices')

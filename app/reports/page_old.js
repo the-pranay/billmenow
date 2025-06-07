@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
   Download, 
-  DollarSign, 
   Users, 
-  FileText, 
-  Clock,
   ArrowLeft,
   Eye,
   PieChart,
@@ -31,13 +28,8 @@ function ReportsPage() {
     kpiCards: []
   });
   const toast = useToast();
-
   // Load reports data from API
-  useEffect(() => {
-    loadReportsData();
-  }, [dateRange]);
-
-  const loadReportsData = async () => {
+  const loadReportsData = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/reports?dateRange=${dateRange}`);
@@ -54,7 +46,11 @@ function ReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dateRange, toast]);
+
+  useEffect(() => {
+    loadReportsData();
+  }, [loadReportsData]);
 
   const exportToPDF = async () => {
     setIsExporting(true);
@@ -75,7 +71,7 @@ function ReportsPage() {
       pdf.text('Key Performance Indicators', 20, 75);
       
       let yPos = 90;
-      reportsData.kpiCards.forEach((kpi, index) => {
+      reportsData.kpiCards.forEach((kpi) => {
         pdf.setFontSize(12);
         pdf.text(`${kpi.title}: ${kpi.value} (${kpi.change})`, 20, yPos);
         yPos += 15;
@@ -86,7 +82,7 @@ function ReportsPage() {
       pdf.text('Revenue Breakdown', 20, yPos + 10);
       yPos += 25;
       
-      reportsData.revenueData.forEach((data, index) => {
+      reportsData.revenueData.forEach((data) => {
         pdf.setFontSize(12);
         pdf.text(`${data.month}: ₹${data.amount.toLocaleString()} (${data.invoices} invoices)`, 20, yPos);
         yPos += 12;
@@ -100,23 +96,7 @@ function ReportsPage() {
       toast.error('Failed to export report');
     } finally {
       setIsExporting(false);
-    }
-  };
-
-  const getStatusColor = (status) => {
-    switch (status.toLowerCase()) {
-      case 'paid':
-        return 'bg-green-500';
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'overdue':
-        return 'bg-red-500';
-      case 'draft':
-        return 'bg-gray-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
+    }  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900">

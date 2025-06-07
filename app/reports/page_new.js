@@ -1,18 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   TrendingUp, 
   TrendingDown, 
   Download, 
-  DollarSign, 
   Users, 
-  FileText, 
-  Clock,
   ArrowLeft,
-  Eye,
-  PieChart,
-  Activity
+  PieChart
 } from 'lucide-react';
 import Link from 'next/link';
 import withAuth from '../components/Auth/withAuth';
@@ -29,15 +24,10 @@ function ReportsPage() {
     paymentStatusData: [],
     topClients: [],
     kpiCards: []
-  });
-  const toast = useToast();
+  });  const toast = useToast();
 
   // Load reports data from API
-  useEffect(() => {
-    loadReportsData();
-  }, [dateRange]);
-
-  const loadReportsData = async () => {
+  const loadReportsData = useCallback(async () => {
     try {
       setIsLoading(true);
       const response = await fetch(`/api/reports?dateRange=${dateRange}`);
@@ -54,7 +44,11 @@ function ReportsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [dateRange, toast]);
+
+  useEffect(() => {
+    loadReportsData();
+  }, [loadReportsData]);
 
   const exportToPDF = async () => {
     setIsExporting(true);

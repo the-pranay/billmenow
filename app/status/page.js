@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { CheckCircle, AlertCircle, XCircle, Clock, Activity, Globe, Database, Mail, CreditCard } from 'lucide-react'
+import { CheckCircle, AlertCircle, XCircle, Clock, Activity } from 'lucide-react'
 
 export default function StatusPage() {
   const [currentTime, setCurrentTime] = useState(new Date())

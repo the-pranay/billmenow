@@ -5,11 +5,7 @@ import {
   Check, 
   X, 
   Star, 
-  ArrowLeft,
-  CreditCard,
-  Shield,
-  Users,
-  Zap
+  ArrowLeft
 } from 'lucide-react';
 import Link from 'next/link';
 

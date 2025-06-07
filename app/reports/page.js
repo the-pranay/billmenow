@@ -5,13 +5,9 @@ import {
   TrendingUp, 
   TrendingDown, 
   Download, 
-  DollarSign, 
   Users, 
-  FileText, 
   ArrowLeft,
-  Eye,
-  PieChart,
-  Activity
+  PieChart
 } from 'lucide-react';
 import Link from 'next/link';
 import withAuth from '../components/Auth/withAuth';
