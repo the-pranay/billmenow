@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
     try {
       await connectToDatabase();
 
-      const { id } = params;
+      const { id } = await params;
 
       const invoice = await Invoice.findOne({
         _id: id,

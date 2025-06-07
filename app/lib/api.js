@@ -54,8 +54,7 @@ export const apiCall = async (url, options = {}) => {
       throw new Error(errorMessage);
     }
     
-    return data;
-  } catch (error) {
+    return data;  } catch (error) {
     console.error('API Call Error Details:', {
       url,
       error: error.message,
@@ -63,12 +62,26 @@ export const apiCall = async (url, options = {}) => {
       options: defaultOptions
     });
     
-    // Re-throw with more context
+    // Provide more specific error messages
     if (error.name === 'TypeError' && error.message.includes('fetch')) {
-      throw new Error('Network error - please check your connection');
+      throw new Error('Network error - please check your connection and try again');
     }
     
-    throw error;
+    if (error.message.includes('Failed to fetch')) {
+      throw new Error('Unable to connect to server. Please check your internet connection.');
+    }
+    
+    if (error.message.includes('Unexpected token')) {
+      throw new Error('Server returned invalid response. Please try again.');
+    }
+    
+    // If it's already a formatted error message, keep it
+    if (error.message && !error.message.includes('API Error:')) {
+      throw error;
+    }
+    
+    // Fallback for unknown errors
+    throw new Error('An unexpected error occurred. Please try again or contact support.');
   }
 };
 

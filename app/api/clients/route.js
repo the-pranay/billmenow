@@ -139,12 +139,46 @@ export async function POST(request) {
         success: true,
         message: 'Client created successfully',
         client: newClient
-      }, { status: 201 });
-
-    } catch (error) {
+      }, { status: 201 });    } catch (error) {
       console.error('Create client error:', error);
+      
+      // Provide more specific error messages based on error type
+      if (error.code === 11000) {
+        // MongoDB duplicate key error
+        return NextResponse.json(
+          { error: 'A client with this email already exists' },
+          { status: 409 }
+        );
+      }
+      
+      if (error.name === 'ValidationError') {
+        // Mongoose validation error
+        const validationErrors = Object.values(error.errors).map(err => err.message);
+        return NextResponse.json(
+          { error: `Validation error: ${validationErrors.join(', ')}` },
+          { status: 400 }
+        );
+      }
+      
+      if (error.name === 'CastError') {
+        // Invalid ObjectId or type casting error
+        return NextResponse.json(
+          { error: 'Invalid data format provided' },
+          { status: 400 }
+        );
+      }
+      
+      // Database connection errors
+      if (error.message.includes('connection') || error.message.includes('ECONNREFUSED')) {
+        return NextResponse.json(
+          { error: 'Database connection error. Please try again.' },
+          { status: 503 }
+        );
+      }
+      
+      // Generic server error
       return NextResponse.json(
-        { error: 'Failed to create client' },
+        { error: 'Internal server error. Please try again later.' },
         { status: 500 }
       );
     }

@@ -204,23 +204,24 @@ function CreateInvoice() {
       const subtotal = calculateSubtotal();
       const taxAmount = calculateTax();
       const discountAmount = subtotal * formData.discount / 100;
-      const total = subtotal + taxAmount - discountAmount;
-
-      // Prepare invoice data
+      const total = subtotal + taxAmount - discountAmount;      // Prepare invoice data with correct field mapping for backend
       const invoiceData = {
-        clientId: formData.clientId,
+        client: formData.clientId, // Backend expects 'client' not 'clientId'
+        invoiceNumber: formData.invoiceNumber,
+        issueDate: formData.issueDate,
+        dueDate: formData.dueDate,
         items: formData.items.map(item => ({
           description: item.description,
           quantity: parseFloat(item.quantity),
           rate: parseFloat(item.rate),
           amount: item.quantity * item.rate
         })),
-        taxRate: formData.globalTax,
-        discountRate: formData.discount,
+        subtotal: subtotal,
+        taxTotal: taxAmount,
+        total: total,
         notes: formData.notes,
-        dueDate: formData.dueDate,
         status: status
-      };      // Save invoice
+      };// Save invoice
       const result = await invoicesAPI.create(invoiceData);
 
       if (result.success) {

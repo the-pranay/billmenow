@@ -92,8 +92,7 @@ function Clients() {
       } else {
         console.error('Client creation failed:', result);
         toast.error(result?.error || 'Failed to add client');
-      }
-    } catch (error) {
+      }    } catch (error) {
       console.error('Error adding client:', error);
       console.error('Error details:', {
         message: error.message,
@@ -101,13 +100,25 @@ function Clients() {
         formData: formData
       });
       
-      // More specific error messages
-      if (error.message.includes('fetch')) {
-        toast.error('Network error. Please check your connection and try again.');
-      } else if (error.message.includes('401')) {
+      // More specific error messages based on error type
+      if (error.message.includes('Network error') || error.message.includes('Unable to connect')) {
+        toast.error('Network error. Please check your internet connection and try again.');
+      } else if (error.message.includes('401') || error.message.includes('Authentication')) {
         toast.error('Authentication error. Please log in again.');
+        // Optionally redirect to login
+        // window.location.href = '/auth/login';
+      } else if (error.message.includes('409') || error.message.includes('already exists')) {
+        toast.error('A client with this email already exists.');
+      } else if (error.message.includes('400') || error.message.includes('validation')) {
+        toast.error('Please check all required fields and try again.');
+      } else if (error.message.includes('500') || error.message.includes('server error')) {
+        toast.error('Server error. Please try again in a moment.');
+      } else if (error.message.includes('Invalid JSON') || error.message.includes('Server returned invalid response')) {
+        toast.error('Server communication error. Please refresh the page and try again.');
       } else {
-        toast.error('Failed to add client. Please try again.');
+        // For any other error, show the actual error message or a generic one
+        const errorMessage = error.message || 'An unexpected error occurred';
+        toast.error(`Failed to add client: ${errorMessage}`);
       }
     } finally {
       setIsSubmitting(false);
