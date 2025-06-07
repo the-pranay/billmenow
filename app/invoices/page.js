@@ -88,23 +88,22 @@ function Invoices() {  const [activeTab, setActiveTab] = useState('all');
   const filteredInvoices = invoices.filter(invoice => {
     let matchesTab = false;
     if (activeTab === 'all') {
-      matchesTab = true;
-    } else if (activeTab === 'pending') {
-      matchesTab = ['sent', 'viewed'].includes(invoice.status);
+      matchesTab = true;    } else if (activeTab === 'pending') {
+      matchesTab = invoice.status && ['sent', 'viewed'].includes(invoice.status);
+    } else if (activeTab === 'draft') {
+      matchesTab = !invoice.status || invoice.status === 'draft';
     } else {
       matchesTab = invoice.status === activeTab;
     }
-    
-    const matchesSearch = invoice.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         invoice.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = (invoice.client && invoice.client.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (invoice.id && invoice.id.toLowerCase().includes(searchTerm.toLowerCase()));
     return matchesTab && matchesSearch;
-  });
-  const tabs = [
+  });  const tabs = [
     { id: 'all', label: 'All Invoices', count: invoices.length },
     { id: 'paid', label: 'Paid', count: invoices.filter(inv => inv.status === 'paid').length },
-    { id: 'pending', label: 'Pending', count: invoices.filter(inv => ['sent', 'viewed'].includes(inv.status)).length },
+    { id: 'pending', label: 'Pending', count: invoices.filter(inv => inv.status && ['sent', 'viewed'].includes(inv.status)).length },
     { id: 'overdue', label: 'Overdue', count: invoices.filter(inv => inv.status === 'overdue').length },
-    { id: 'draft', label: 'Draft', count: invoices.filter(inv => inv.status === 'draft').length }
+    { id: 'draft', label: 'Draft', count: invoices.filter(inv => !inv.status || inv.status === 'draft').length }
   ];
 
   return (
@@ -219,44 +218,38 @@ function Invoices() {  const [activeTab, setActiveTab] = useState('all');
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">
-                {filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50 dark:hover:bg-slate-700">
-                    <td className="px-6 py-4 whitespace-nowrap">
+              <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-200 dark:divide-slate-700">                {filteredInvoices.map((invoice, index) => (
+                  <tr key={invoice.id || invoice._id || invoice.invoiceNumber || index} className="hover:bg-gray-50 dark:hover:bg-slate-700"><td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {invoice.id}
+                          {invoice.id || invoice.invoiceNumber || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Created {formatDate(invoice.createdDate)}
+                          Created {invoice.createdDate ? formatDate(invoice.createdDate) : 'N/A'}
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
+                    <td className="px-6 py-4 whitespace-nowrap">                      <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
-                          {invoice.client}
+                          {invoice.client || 'N/A'}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {invoice.clientEmail}
+                          {invoice.clientEmail || ''}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    </td>                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                        {formatCurrency(invoice.amount)}
+                        {invoice.amount ? formatCurrency(invoice.amount) : formatCurrency(invoice.total || 0)}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status)}`}>
-                        {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                    <td className="px-6 py-4 whitespace-nowrap">                      <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(invoice.status || 'draft')}`}>
+                        {invoice.status ? invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) : 'Draft'}
                       </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    </td>                    <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm text-gray-900 dark:text-white">
-                        {formatDate(invoice.dueDate)}
+                        {invoice.dueDate ? formatDate(invoice.dueDate) : 'N/A'}
                       </div>
-                    </td>                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    </td><td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex items-center justify-end space-x-2">
                         <button 
                           className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"

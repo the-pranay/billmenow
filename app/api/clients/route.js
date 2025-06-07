@@ -112,9 +112,7 @@ export async function POST(request) {
           { error: 'Client with this email already exists' },
           { status: 409 }
         );
-      }
-
-      // Create new client
+      }      // Create new client
       const newClient = new Client({
         userId: user.id,
         name,
@@ -122,13 +120,15 @@ export async function POST(request) {
         phone,
         company,
         address: {
-          street: address,
-          city,
-          state,
-          zipCode,
-          country
+          street: address || '',
+          city: city || '',
+          state: state || '',
+          zipCode: zipCode || '',
+          country: country || ''
         },
-        taxId,
+        taxInfo: {
+          taxId: taxId || ''
+        },
         notes,
         status: 'active'
       });

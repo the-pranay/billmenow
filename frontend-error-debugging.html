@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend Error Debugging - BillMeNow</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .error-log {
+            background: #f8f8f8;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .test-section {
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status {
+            padding: 5px 10px;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+        }
+        .success { background: #28a745; }
+        .error { background: #dc3545; }
+        .warning { background: #ffc107; color: #000; }
+        .pending { background: #6c757d; }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        .test-controls {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .console-monitor {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Frontend Error Debugging - BillMeNow</h1>
+        <p>This tool will test the frontend application and capture any JavaScript errors that trigger the ErrorBoundary.</p>
+        
+        <div class="test-controls">
+            <h3>Test Controls</h3>
+            <button onclick="startTesting()">🚀 Start Comprehensive Testing</button>
+            <button onclick="testSpecificPages()">📄 Test Specific Pages</button>
+            <button onclick="clearLogs()">🧹 Clear Logs</button>
+            <button onclick="exportResults()">💾 Export Results</button>
+        </div>
+
+        <div class="test-section">
+            <h3>Console Error Monitor</h3>
+            <div id="consoleMonitor" class="console-monitor">
+                Console output will appear here...
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>Test Results</h3>
+            <div id="testResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>Live Application</h3>
+            <iframe id="appFrame" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        let consoleOutput = [];
+        let currentTest = 0;
+
+        // Override console methods to capture output
+        const originalConsole = {
+            log: console.log,
+            error: console.error,
+            warn: console.warn,
+            info: console.info
+        };
+
+        function captureConsole(type, ...args) {
+            const timestamp = new Date().toISOString();
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            
+            consoleOutput.push({
+                timestamp,
+                type,
+                message
+            });
+            
+            updateConsoleMonitor();
+            originalConsole[type](...args);
+        }
+
+        console.log = (...args) => captureConsole('log', ...args);
+        console.error = (...args) => captureConsole('error', ...args);
+        console.warn = (...args) => captureConsole('warn', ...args);
+        console.info = (...args) => captureConsole('info', ...args);
+
+        function updateConsoleMonitor() {
+            const monitor = document.getElementById('consoleMonitor');
+            monitor.innerHTML = consoleOutput
+                .slice(-50) // Show last 50 messages
+                .map(entry => `[${entry.timestamp.substring(11, 19)}] ${entry.type.toUpperCase()}: ${entry.message}`)
+                .join('\n');
+            monitor.scrollTop = monitor.scrollHeight;
+        }
+
+        const testScenarios = [
+            {
+                name: "Homepage Load",
+                url: "http://localhost:3001",
+                description: "Test if homepage loads without errors"
+            },
+            {
+                name: "Dashboard Access", 
+                url: "http://localhost:3001/dashboard",
+                description: "Test dashboard page"
+            },
+            {
+                name: "Clients Page",
+                url: "http://localhost:3001/clients",
+                description: "Test clients page (reported error location)"
+            },
+            {
+                name: "Invoice Creation",
+                url: "http://localhost:3001/invoices/create", 
+                description: "Test invoice creation page (reported error location)"
+            },
+            {
+                name: "Login Page",
+                url: "http://localhost:3001/auth/login",
+                description: "Test login functionality"
+            },
+            {
+                name: "Register Page", 
+                url: "http://localhost:3001/auth/register",
+                description: "Test registration functionality"
+            }
+        ];
+
+        async function startTesting() {
+            console.log("🚀 Starting comprehensive frontend testing...");
+            testResults = [];
+            currentTest = 0;
+            
+            for (const scenario of testScenarios) {
+                await testPage(scenario);
+                await sleep(3000); // Wait between tests
+            }
+            
+            console.log("✅ Testing complete!");
+            displayResults();
+        }
+
+        async function testPage(scenario) {
+            console.log(`📝 Testing: ${scenario.name}`);
+            
+            const startTime = Date.now();
+            const initialErrorCount = consoleOutput.filter(entry => entry.type === 'error').length;
+            
+            return new Promise((resolve) => {
+                const iframe = document.getElementById('appFrame');
+                
+                // Set up error listeners for the iframe
+                iframe.onload = () => {
+                    setTimeout(() => {
+                        const endTime = Date.now();
+                        const newErrorCount = consoleOutput.filter(entry => entry.type === 'error').length;
+                        const errorsFound = newErrorCount - initialErrorCount;
+                        
+                        const result = {
+                            name: scenario.name,
+                            url: scenario.url,
+                            description: scenario.description,
+                            loadTime: endTime - startTime,
+                            errorsFound,
+                            success: errorsFound === 0,
+                            timestamp: new Date().toISOString()
+                        };
+                        
+                        testResults.push(result);
+                        console.log(`${result.success ? '✅' : '❌'} ${scenario.name}: ${errorsFound} errors found`);
+                        
+                        resolve();
+                    }, 2000); // Wait for page to fully load
+                };
+                
+                iframe.onerror = (error) => {
+                    console.error(`Frame error for ${scenario.name}:`, error);
+                    resolve();
+                };
+                
+                iframe.src = scenario.url;
+            });
+        }
+
+        async function testSpecificPages() {
+            console.log("🎯 Testing specific problematic pages...");
+            
+            // Test the exact user workflows that are failing
+            const specificTests = [
+                {
+                    name: "Client Creation Workflow",
+                    steps: [
+                        "Load clients page",
+                        "Click add client button", 
+                        "Fill client form",
+                        "Submit form"
+                    ]
+                },
+                {
+                    name: "Invoice Creation Workflow", 
+                    steps: [
+                        "Load invoice creation page",
+                        "Select client",
+                        "Fill invoice details", 
+                        "Submit invoice"
+                    ]
+                }
+            ];
+            
+            for (const test of specificTests) {
+                console.log(`🔍 Testing workflow: ${test.name}`);
+                // For now, just load the main pages
+                // In a real implementation, we'd automate the clicks and form fills
+            }
+        }
+
+        function displayResults() {
+            const resultsDiv = document.getElementById('testResults');
+            
+            let html = '<h4>Test Summary</h4>';
+            html += `<p>Total tests: ${testResults.length}</p>`;
+            html += `<p>Successful: ${testResults.filter(r => r.success).length}</p>`;
+            html += `<p>Failed: ${testResults.filter(r => !r.success).length}</p>`;
+            
+            html += '<h4>Detailed Results</h4>';
+            html += '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr style="background: #f0f0f0;"><th style="border: 1px solid #ccc; padding: 8px;">Test</th><th style="border: 1px solid #ccc; padding: 8px;">Status</th><th style="border: 1px solid #ccc; padding: 8px;">Errors</th><th style="border: 1px solid #ccc; padding: 8px;">Load Time</th></tr>';
+            
+            testResults.forEach(result => {
+                const statusClass = result.success ? 'success' : 'error';
+                html += `<tr>
+                    <td style="border: 1px solid #ccc; padding: 8px;">${result.name}</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;"><span class="status ${statusClass}">${result.success ? 'PASS' : 'FAIL'}</span></td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">${result.errorsFound}</td>
+                    <td style="border: 1px solid #ccc; padding: 8px;">${result.loadTime}ms</td>
+                </tr>`;
+            });
+            
+            html += '</table>';
+            
+            if (consoleOutput.filter(entry => entry.type === 'error').length > 0) {
+                html += '<h4>Captured Errors</h4>';
+                html += '<div class="error-log">';
+                consoleOutput.filter(entry => entry.type === 'error').forEach(error => {
+                    html += `[${error.timestamp}] ERROR: ${error.message}\n`;
+                });
+                html += '</div>';
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+
+        function clearLogs() {
+            consoleOutput = [];
+            testResults = [];
+            document.getElementById('consoleMonitor').innerHTML = 'Console cleared...';
+            document.getElementById('testResults').innerHTML = '';
+            console.log("🧹 Logs cleared");
+        }
+
+        function exportResults() {
+            const data = {
+                timestamp: new Date().toISOString(),
+                testResults,
+                consoleOutput: consoleOutput.filter(entry => entry.type === 'error'),
+                summary: {
+                    totalTests: testResults.length,
+                    successful: testResults.filter(r => r.success).length,
+                    failed: testResults.filter(r => !r.success).length,
+                    totalErrors: consoleOutput.filter(entry => entry.type === 'error').length
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `frontend-error-debug-${new Date().toISOString().slice(0, 19)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log("💾 Results exported");
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Initialize
+        console.log("🔍 Frontend Error Debugging Tool Ready");
+        console.log("Click 'Start Comprehensive Testing' to begin");
+        
+        // Load the homepage initially
+        setTimeout(() => {
+            document.getElementById('appFrame').src = 'http://localhost:3001';
+        }, 1000);
+    </script>
+</body>
+</html>
