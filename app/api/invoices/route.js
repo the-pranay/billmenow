@@ -174,11 +174,66 @@ export async function POST(request) {
       const subtotal = providedSubtotal || calculatedSubtotal;
       const taxTotal = providedTaxTotal || 0;
       const discountAmount = 0; // Not used in current implementation
-      const total = providedTotal || (subtotal + taxTotal - discountAmount);
-
-      // Use provided invoice number or generate one
-      const invoiceCount = await Invoice.countDocuments({ userId: user.id });
-      const invoiceNumber = providedInvoiceNumber || `INV-${Date.now()}-${String(invoiceCount + 1).padStart(3, '0')}`;
+      const total = providedTotal || (subtotal + taxTotal - discountAmount);      // Generate unique invoice number with retry mechanism
+      let invoiceNumber = providedInvoiceNumber;
+      
+      if (!invoiceNumber) {
+        const currentYear = new Date().getFullYear();
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (attempts < maxAttempts) {
+          try {
+            // Get the highest invoice number for this user and year
+            const lastInvoice = await Invoice.findOne({
+              userId: user.id,
+              invoiceNumber: { $regex: `^INV-${currentYear}-` }
+            }).sort({ invoiceNumber: -1 });
+            
+            let nextNumber = 1;
+            if (lastInvoice) {
+              const lastNumber = parseInt(lastInvoice.invoiceNumber.split('-')[2]) || 0;
+              nextNumber = lastNumber + 1;
+            }
+            
+            invoiceNumber = `INV-${currentYear}-${String(nextNumber).padStart(3, '0')}`;
+            
+            // Check if this invoice number already exists
+            const existingInvoice = await Invoice.findOne({
+              userId: user.id,
+              invoiceNumber: invoiceNumber
+            });
+            
+            if (!existingInvoice) {
+              break; // Unique number found
+            }
+            
+            attempts++;
+          } catch (error) {
+            attempts++;
+            if (attempts >= maxAttempts) {
+              throw new Error('Unable to generate unique invoice number');
+            }
+          }
+        }
+        
+        if (attempts >= maxAttempts) {
+          throw new Error('Failed to generate unique invoice number after multiple attempts');
+        }
+      } else {
+        // Check if provided invoice number already exists
+        const existingInvoice = await Invoice.findOne({
+          userId: user.id,
+          invoiceNumber: providedInvoiceNumber
+        });
+        
+        if (existingInvoice) {
+          return NextResponse.json(
+            { error: `Invoice number "${providedInvoiceNumber}" already exists. Please use a different number.` },
+            { status: 400 }
+          );
+        }
+      }
 
       // Create new invoice
       const newInvoice = new Invoice({
@@ -207,12 +262,39 @@ export async function POST(request) {
         success: true,
         message: 'Invoice created successfully',
         invoice: newInvoice
-      }, { status: 201 });
-
-    } catch (error) {
+      }, { status: 201 });    } catch (error) {
       console.error('Create invoice error:', error);
+      
+      // Handle specific MongoDB duplicate key error
+      if (error.code === 11000) {
+        const duplicateField = Object.keys(error.keyValue || {})[0];
+        if (duplicateField === 'invoiceNumber') {
+          return NextResponse.json(
+            { error: `Invoice number "${error.keyValue.invoiceNumber}" already exists. Please try again with a different number.` },
+            { status: 400 }
+          );
+        }
+        return NextResponse.json(
+          { error: 'Duplicate entry detected. Please check your data and try again.' },
+          { status: 400 }
+        );
+      }
+      
+      // Handle validation errors
+      if (error.name === 'ValidationError') {
+        const validationErrors = Object.values(error.errors).map(err => err.message);
+        return NextResponse.json(
+          { error: `Validation failed: ${validationErrors.join(', ')}` },
+          { status: 400 }
+        );
+      }
+      
+      // Handle general errors
       return NextResponse.json(
-        { error: error.message || 'Failed to create invoice' },
+        { 
+          error: error.message || 'Failed to create invoice. Please try again.',
+          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        },
         { status: 500 }
       );
     }

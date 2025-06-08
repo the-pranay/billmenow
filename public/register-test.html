@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick User Registration - BillMeNow</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 500px; margin: 50px auto; padding: 20px; }
+        .form-group { margin: 15px 0; }
+        input { width: 100%; padding: 10px; margin: 5px 0; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .result { margin: 20px 0; padding: 15px; border-radius: 4px; white-space: pre-wrap; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+    </style>
+</head>
+<body>
+    <h2>Quick User Registration</h2>
+    <form id="registerForm">
+        <div class="form-group">
+            <input type="text" id="firstName" placeholder="First Name" value="Test" required>
+        </div>
+        <div class="form-group">
+            <input type="text" id="lastName" placeholder="Last Name" value="User" required>
+        </div>
+        <div class="form-group">
+            <input type="email" id="email" placeholder="Email" value="testuser@example.com" required>
+        </div>
+        <div class="form-group">
+            <input type="password" id="password" placeholder="Password" value="test123" required>
+        </div>
+        <div class="form-group">
+            <input type="text" id="businessName" placeholder="Business Name" value="Test Business Inc" required>
+        </div>
+        <button type="submit">Register</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.textContent = 'Registering user...';
+            resultDiv.className = 'result';
+            
+            const userData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                businessName: document.getElementById('businessName').value
+            };
+            
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(userData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.textContent = `✅ Registration successful!\n\nUser created: ${data.user.firstName} ${data.user.lastName}\nEmail: ${data.user.email}\nBusiness: ${data.user.businessName}\n\nYou can now use these credentials to test invoice creation.`;
+                    resultDiv.className = 'result success';
+                } else {
+                    resultDiv.textContent = `❌ Registration failed: ${data.error || 'Unknown error'}`;
+                    resultDiv.className = 'result error';
+                }
+            } catch (error) {
+                resultDiv.textContent = `❌ Registration error: ${error.message}`;
+                resultDiv.className = 'result error';
+            }
+        });
+    </script>
+</body>
+</html>

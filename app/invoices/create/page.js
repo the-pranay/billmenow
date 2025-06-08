@@ -11,9 +11,8 @@ import jsPDF from 'jspdf';
 function CreateInvoice() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const [formData, setFormData] = useState({
-    invoiceNumber: `INV-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
+  const { user } = useAuth();  const [formData, setFormData] = useState({
+    invoiceNumber: '', // Will be generated when component mounts
     clientId: '',
     clientName: '',
     clientEmail: '',
@@ -87,13 +86,37 @@ function CreateInvoice() {
     const discount = subtotal * formData.discount / 100;
     return subtotal + tax - discount;
   };
-
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
-  };  const [isSubmitting, setIsSubmitting] = useState(false);  const [clients, setClients] = useState([]);
+  };
+
+  const generateInvoiceNumber = async () => {
+    try {
+      // Get next available invoice number from API
+      const response = await fetch('/api/invoices/next-number', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.invoiceNumber;
+      } else {
+        // Fallback to client-side generation
+        const currentYear = new Date().getFullYear();
+        return `INV-${currentYear}-${String(Math.floor(Math.random() * 1000) + 1).padStart(3, '0')}`;
+      }
+    } catch (error) {
+      console.error('Error generating invoice number:', error);
+      // Fallback to client-side generation
+      const currentYear = new Date().getFullYear();
+      return `INV-${currentYear}-${String(Math.floor(Math.random() * 1000) + 1).padStart(3, '0')}`;
+    }
+  };const [isSubmitting, setIsSubmitting] = useState(false);  const [clients, setClients] = useState([]);
   const toast = useToast();  // Load clients from API and handle URL parameters
   useEffect(() => {
     const loadClients = async () => {
@@ -108,7 +131,15 @@ function CreateInvoice() {
       }
     };
 
+    const initializeInvoiceNumber = async () => {
+      if (!formData.invoiceNumber) {
+        const invoiceNumber = await generateInvoiceNumber();
+        setFormData(prev => ({ ...prev, invoiceNumber }));
+      }
+    };
+
     loadClients();
+    initializeInvoiceNumber();
   }, [toast]);
 
   // Handle client pre-selection from URL parameters
@@ -236,7 +267,7 @@ function CreateInvoice() {
         total: total,
         notes: formData.notes,
         status: status
-      };// Save invoice
+      };      // Save invoice
       const result = await invoicesAPI.create(invoiceData);
 
       if (result.success) {
@@ -252,8 +283,18 @@ function CreateInvoice() {
             router.push('/invoices');
           }, 1500);
         } else {
-          toast.error(result.error || 'Failed to create invoice');
-        }    } catch (error) {
+          // Handle specific error messages from the API
+          if (result.error && result.error.includes('already exists')) {
+            toast.error(result.error);
+            // Generate a new invoice number automatically
+            const currentYear = new Date().getFullYear();
+            const newNumber = `INV-${currentYear}-${String(Math.floor(Math.random() * 1000) + 1).padStart(3, '0')}`;
+            setFormData({ ...formData, invoiceNumber: newNumber });
+            toast.info(`Generated new invoice number: ${newNumber}`);
+          } else {
+            toast.error(result.error || 'Failed to create invoice');
+          }
+        }} catch (error) {
       console.error('Error creating invoice:', error);
       toast.error('Failed to create invoice. Please try again.');
     }
