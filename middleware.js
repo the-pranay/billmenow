@@ -5,8 +5,7 @@ export function middleware(request) {
   
   // Get token from cookies
   const token = request.cookies.get('auth-token')?.value;
-  
-  // Define protected routes
+    // Define protected routes
   const protectedRoutes = [
     '/dashboard',
     '/invoices',
@@ -14,8 +13,7 @@ export function middleware(request) {
     '/reports',
     '/profile',
     '/settings',
-    '/email-templates',
-    '/payment'
+    '/email-templates'
   ];
   
   // Define auth routes (should redirect to dashboard if already logged in)

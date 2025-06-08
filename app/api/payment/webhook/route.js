@@ -50,10 +50,16 @@ export async function POST(request) {
 
       case 'payment.authorized':
         await handlePaymentAuthorized(event.payload.payment.entity);
+        break;      case 'refund.created':
+        await handleRefundCreated(event.payload.refund.entity);
         break;
 
-      case 'refund.created':
-        await handleRefundCreated(event.payload.refund.entity);
+      case 'refund.processed':
+        await handleRefundProcessed(event.payload.refund.entity);
+        break;
+
+      case 'refund.failed':
+        await handleRefundFailed(event.payload.refund.entity);
         break;
       
       default:
@@ -277,5 +283,128 @@ async function sendPaymentConfirmationEmail(invoice, payment) {
 
   } catch (error) {
     console.error('Error sending payment confirmation email:', error);
+  }
+}
+
+async function handleRefundProcessed(refund) {
+  try {
+    console.log('Processing refund processed:', refund.id);
+
+    // Find the original payment
+    const paymentRecord = await Payment.findOne({
+      razorpayPaymentId: refund.payment_id
+    });
+
+    if (paymentRecord) {
+      // Update payment record with processed refund info
+      paymentRecord.refundStatus = 'processed';
+      paymentRecord.refundProcessedAt = new Date();
+      paymentRecord.razorpayRefundResponse = refund;
+      await paymentRecord.save();
+
+      // Update invoice status
+      const invoice = await Invoice.findById(paymentRecord.invoiceId);
+      if (invoice) {
+        if (refund.amount === paymentRecord.amount * 100) {
+          // Full refund processed
+          invoice.status = 'refunded';
+        } else {
+          // Partial refund processed
+          invoice.status = 'partially_refunded';
+        }
+        invoice.refundProcessedAt = new Date();
+        await invoice.save();
+
+        // Send refund confirmation email
+        await sendRefundConfirmationEmail(invoice, refund, paymentRecord);
+      }
+
+      console.log('Refund processed successfully:', {
+        refund_id: refund.id,
+        payment_id: refund.payment_id,
+        amount: refund.amount / 100,
+        status: refund.status
+      });
+    }
+
+  } catch (error) {
+    console.error('Error handling refund processed:', error);
+  }
+}
+
+async function handleRefundFailed(refund) {
+  try {
+    console.log('Processing refund failed:', refund.id);
+
+    // Find the original payment
+    const paymentRecord = await Payment.findOne({
+      razorpayPaymentId: refund.payment_id
+    });
+
+    if (paymentRecord) {
+      // Update payment record with failed refund info
+      paymentRecord.refundStatus = 'failed';
+      paymentRecord.refundFailureReason = refund.error_description;
+      paymentRecord.refundFailedAt = new Date();
+      paymentRecord.razorpayRefundResponse = refund;
+      await paymentRecord.save();
+
+      console.log('Refund failed processed:', {
+        refund_id: refund.id,
+        payment_id: refund.payment_id,
+        error_code: refund.error_code,
+        error_description: refund.error_description
+      });
+    }
+
+  } catch (error) {
+    console.error('Error handling refund failed:', error);
+  }
+}
+
+async function sendRefundConfirmationEmail(invoice, refund, paymentRecord) {
+  try {
+    // Get user and client details
+    const user = await User.findById(invoice.userId);
+    const invoiceWithClient = await Invoice.findById(invoice._id).populate('clientId');
+
+    if (user && invoiceWithClient.clientId) {
+      const emailData = {
+        to: invoiceWithClient.clientId.email,
+        subject: 'Refund Processed - Invoice ' + invoiceWithClient.invoiceNumber,
+        template: 'custom',
+        templateData: {
+          subject: 'Refund Processed Successfully',
+          clientName: invoiceWithClient.clientId.name,
+          invoiceNumber: invoiceWithClient.invoiceNumber,
+          refundAmount: `₹${(refund.amount / 100).toLocaleString('en-IN')}`,
+          refundDate: new Date().toLocaleDateString('en-IN'),
+          refundId: refund.id,
+          originalPaymentId: paymentRecord.razorpayPaymentId,
+          senderName: `${user.firstName} ${user.lastName}`,
+          businessName: user.businessName || 'N/A',
+          contactDetails: user.email,
+          message: `Your refund of ₹${(refund.amount / 100).toLocaleString('en-IN')} for invoice ${invoiceWithClient.invoiceNumber} has been processed successfully. The amount will be credited to your original payment method within 5-7 business days.`
+        }
+      };
+
+      // Send refund confirmation email
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/email/send`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData)
+      });
+
+      if (emailResponse.ok) {
+        console.log('Refund confirmation email sent successfully');
+      } else {
+        console.error('Failed to send refund confirmation email');
+      }
+    }
+
+  } catch (error) {
+    console.error('Error sending refund confirmation email:', error);
   }
 }
