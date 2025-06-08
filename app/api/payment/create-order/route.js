@@ -75,12 +75,15 @@ export async function POST(request) {
     const razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });
+    });    // Create a short receipt ID (max 40 chars for Razorpay)
+    const timestamp = Date.now().toString().slice(-8); // Last 8 digits
+    const shortInvoiceId = invoiceId.slice(-8); // Last 8 chars of invoice ID
+    const receipt = `rcpt_${shortInvoiceId}_${timestamp}`;
 
     const order = await razorpay.orders.create({
       amount: amount * 100, // Amount in paise
       currency: currency,
-      receipt: `receipt_${invoiceId}_${Date.now()}`,
+      receipt: receipt,
       notes: {
         invoiceId: invoiceId,
         userId: user?.id || invoice.userId.toString(),
