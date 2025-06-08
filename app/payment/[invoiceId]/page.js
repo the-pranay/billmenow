@@ -12,10 +12,6 @@ export default function InvoicePaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
-  useEffect(() => {
-    if (invoiceId) {
-      fetchInvoice();
-    }  }, [invoiceId, fetchInvoice]);
   
   const fetchInvoice = useCallback(async () => {
     try {
@@ -37,6 +33,12 @@ export default function InvoicePaymentPage() {
       setLoading(false);
     }
   }, [invoiceId]);
+
+  useEffect(() => {
+    if (invoiceId) {
+      fetchInvoice();
+    }
+  }, [invoiceId, fetchInvoice]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
