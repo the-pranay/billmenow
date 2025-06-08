@@ -264,17 +264,7 @@ export default function InvoicePaymentPage() {
               <CreditCard className="w-5 h-5 mr-2" />
               Make Payment
             </h2>            <PaymentGateway 
-              invoiceId={invoice._id}
-              amount={invoice.remainingBalance || invoice.total}
-              clientInfo={{
-                name: invoice.client?.name || 'Client',
-                email: invoice.client?.email || ''
-              }}
-              invoiceData={{
-                invoiceNumber: invoice.invoiceNumber,
-                description: invoice.items.map(item => item.description).join(', '),
-                dueDate: invoice.dueDate
-              }}
+              invoiceData={invoice}
               onPaymentSuccess={() => {
                 setIsPaid(true);
                 // Optionally refresh the invoice data
