@@ -16,9 +16,8 @@ export default function CancellationPolicy() {
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                 1. Subscription Cancellation
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                You may cancel your BillMeNow subscription at any time through your account settings 
-                or by contacting our support team. Here's what you need to know:
+              <p className="text-gray-600 dark:text-gray-400 mb-4">                You may cancel your BillMeNow subscription at any time through your account settings 
+                or by contacting our support team. Here&apos;s what you need to know:
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-400 space-y-2">
                 <li>Cancellations can be processed immediately or scheduled for the end of your billing cycle</li>
@@ -78,7 +77,7 @@ export default function CancellationPolicy() {
                 4. Free Trial Cancellation
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-4">
-                If you're on a free trial:
+                If you&apos;re on a free trial:
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-400 space-y-2">
                 <li>Cancel anytime during the trial period with no charges</li>
@@ -165,8 +164,7 @@ export default function CancellationPolicy() {
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
                 9. Feedback and Improvement
               </h2>
-              <p className="text-gray-600 dark:text-gray-400 mb-4">
-                We value your feedback to improve our service. When cancelling, you'll have the 
+              <p className="text-gray-600 dark:text-gray-400 mb-4">                We value your feedback to improve our service. When cancelling, you&apos;ll have the 
                 opportunity to share:
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-400 space-y-2">

@@ -5,7 +5,6 @@ import { Eye, EyeOff, Mail, Lock, ArrowRight, Chrome } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
-import { useRouter } from 'next/navigation';
 import { useToast } from '../../components/Utilities/Toast';
 
 export default function LoginPage() {
@@ -14,9 +13,8 @@ export default function LoginPage() {
     password: '',
     rememberMe: false
   });  const [showPassword, setShowPassword] = useState(false);
-  const { login, loading, error } = useAuth();
-  const router = useRouter();
-  const { success, error: showError } = useToast();  const handleSubmit = async (e) => {
+  const { login, loading } = useAuth();
+  const { success, error: showError } = useToast();const handleSubmit = async (e) => {
     e.preventDefault();
     const result = await login(formData.email, formData.password);
     if (result.success) {
@@ -204,10 +202,9 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* Sign Up Link */}
-            <div className="text-center">
+            {/* Sign Up Link */}            <div className="text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <Link
                   href="/auth/register"
                   className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"

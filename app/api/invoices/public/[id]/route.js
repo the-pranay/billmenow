@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../lib/database.js';
 import Invoice from '../../../../lib/models/Invoice.js';
-import Client from '../../../../lib/models/Client.js';
 import Payment from '../../../../lib/models/Payment.js';
 
 // GET - Fetch a specific invoice for public access (no authentication required)
@@ -53,12 +52,11 @@ export async function GET(request, { params }) {
       notes: invoice.notes,
       terms: invoice.terms,
       totalPaid,
-      remainingBalance: invoice.total - totalPaid,
-      payments: payments.map(payment => ({
+      remainingBalance: invoice.total - totalPaid,      payments: payments.map(payment => ({
         _id: payment._id,
         amount: payment.amount,
         status: payment.status,
-        paymentMethod: payment.paymentMethod,
+        paymentMethod: payment.method, // Use 'method' field from Payment model
         transactionId: payment.transactionId,
         createdAt: payment.createdAt
       })),

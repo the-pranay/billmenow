@@ -13,14 +13,13 @@ export default function Hero() {
     "Manage Clients Efficiently",
     "Generate Detailed Reports"
   ];
-
   useEffect(() => {
     setIsVisible(true);
     const interval = setInterval(() => {
       setCurrentFeature((prev) => (prev + 1) % features.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, []);
+  }, [features.length]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
@@ -183,7 +182,7 @@ export default function Hero() {
               Everything You Need to Manage Your Business
             </h2>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              From invoice creation to payment collection, we've got you covered with powerful features designed for modern freelancers.
+              From invoice creation to payment collection, we&apos;ve got you covered with powerful features designed for modern freelancers.
             </p>
           </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import withAuth from '../../components/Auth/withAuth';
@@ -54,17 +54,20 @@ function CreateInvoice() {
       newItems[index].amount = quantity * rate * (1 + tax / 100);
     }
     
-    setFormData({ ...formData, items: newItems });
-  };
-  const selectClient = (client) => {
+    setFormData({ ...formData, items: newItems });  };  
+
+  const selectClient = useCallback((client) => {
     setFormData({
       ...formData,
       clientId: client._id || client.id,
       clientName: client.name,
       clientEmail: client.email,
-      clientAddress: client.address
+      clientAddress: client.address && typeof client.address === 'object' 
+        ? [client.address.street, client.address.city, client.address.state, client.address.zipCode, client.address.country]
+            .filter(Boolean).join(', ')
+        : client.address || ''
     });
-  };
+  }, [formData]);
 
   const calculateSubtotal = () => {
     return formData.items.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
@@ -90,14 +93,23 @@ function CreateInvoice() {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
-  };  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [isLoadingClients, setIsLoadingClients] = useState(true);
-  const toast = useToast();
-  // Load clients from API and handle URL parameters
+  };  const [isSubmitting, setIsSubmitting] = useState(false);  const [clients, setClients] = useState([]);
+  const toast = useToast();  // Load clients from API and handle URL parameters
   useEffect(() => {
+    const loadClients = async () => {
+      try {
+        const data = await clientsAPI.getAll();
+        if (data && data.success) {
+          setClients(data.clients || []);
+        }
+      } catch (error) {
+        console.error('Error loading clients:', error);
+        toast.error('Failed to load clients');
+      }
+    };
+
     loadClients();
-  }, []);
+  }, [toast]);
 
   // Handle client pre-selection from URL parameters
   useEffect(() => {
@@ -110,25 +122,7 @@ function CreateInvoice() {
         selectClient(preSelectedClient);
         toast.success(`Client "${preSelectedClient.name}" has been pre-selected`);
       }
-    }
-  }, [clients, searchParams]);
-  const loadClients = async () => {
-    try {
-      setIsLoadingClients(true);
-      const data = await clientsAPI.getAll();
-      
-      if (data && data.success) {
-        setClients(data.clients || []);
-      } else {
-        toast.error('Failed to load clients');
-      }
-    } catch (error) {
-      console.error('Error loading clients:', error);
-      toast.error('Failed to load clients');
-    } finally {
-      setIsLoadingClients(false);
-    }
-  };
+    }  }, [clients, searchParams, selectClient, toast]);
 
   const downloadPDF = async () => {
     try {
@@ -156,7 +150,7 @@ function CreateInvoice() {
       pdf.text('Items:', 20, 125);
       
       let yPos = 140;
-      formData.items.forEach((item, index) => {
+      formData.items.forEach((item) => {
         pdf.setFontSize(10);
         pdf.text(`${item.description} - Qty: ${item.quantity} x ₹${item.rate} = ₹${(item.quantity * item.rate).toLocaleString()}`, 20, yPos);
         yPos += 10;

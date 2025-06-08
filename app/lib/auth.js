@@ -19,7 +19,7 @@ export const generateToken = (payload) => {
 export const verifyToken = (token) => {
   try {
     return jwt.verify(token, JWT_SECRET);
-  } catch (error) {
+  } catch {
     return null;
   }
 };
@@ -30,4 +30,20 @@ export const generateResetToken = () => {
 
 export const generateEmailVerificationToken = (email) => {
   return jwt.sign({ email, type: 'email_verification' }, JWT_SECRET, { expiresIn: '24h' });
+};
+
+// Add authenticateUser function for API route authentication
+export const authenticateUser = (authHeader) => {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    throw new Error('No valid authorization header provided');
+  }
+  
+  const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+  const decoded = verifyToken(token);
+  
+  if (!decoded) {
+    throw new Error('Invalid or expired token');
+  }
+  
+  return decoded;
 };

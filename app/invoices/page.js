@@ -7,37 +7,35 @@ import { useToast } from '../components/Utilities/Toast';
 import { invoicesAPI } from '../lib/api';
 
 function Invoices() {  const [activeTab, setActiveTab] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [invoices, setInvoices] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');  const [invoices, setInvoices] = useState([]);
   const [shareModal, setShareModal] = useState({ open: false, invoice: null });
   const [copiedLink, setCopiedLink] = useState(false);
-  const toast = useToast();
-
-  // Load invoices from API
+  const toast = useToast();  // Load invoices from API
   useEffect(() => {
-    loadInvoices();
-  }, []);  const loadInvoices = async () => {
-    try {
-      setIsLoading(true);
-      const data = await invoicesAPI.getAll();
-      
-      console.log('Invoice API Response:', data); // Debug log
-      
-      if (data && data.success) {
-        console.log('Invoices loaded:', data.invoices); // Debug log
-        setInvoices(data.invoices || []);
-      } else {
-        console.error('Failed to load invoices:', data);
+    const loadInvoices = async () => {
+      try {
+        setIsLoading(true);
+        const data = await invoicesAPI.getAll();
+        
+        console.log('Invoice API Response:', data); // Debug log
+        
+        if (data && data.success) {
+          console.log('Invoices loaded:', data.invoices); // Debug log
+          setInvoices(data.invoices || []);
+        } else {
+          console.error('Failed to load invoices:', data);
+          toast.error('Failed to load invoices');
+        }
+      } catch (error) {
+        console.error('Error loading invoices:', error);
         toast.error('Failed to load invoices');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading invoices:', error);
-      toast.error('Failed to load invoices');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    loadInvoices();
+  }, [toast]);
 
   const handleShareInvoice = (invoice) => {
     setShareModal({ open: true, invoice });
@@ -53,8 +51,7 @@ function Invoices() {  const [activeTab, setActiveTab] = useState('all');
       await navigator.clipboard.writeText(text);
       setCopiedLink(true);
       toast.success('Payment link copied to clipboard!');
-      setTimeout(() => setCopiedLink(false), 2000);
-    } catch (error) {
+      setTimeout(() => setCopiedLink(false), 2000);    } catch {
       toast.error('Failed to copy link');
     }
   };

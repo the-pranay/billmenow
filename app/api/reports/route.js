@@ -136,7 +136,7 @@ async function generateRevenueReport(baseQuery, period) {
   });
 }
 
-async function generateClientReport(baseQuery, period) {
+async function generateClientReport(baseQuery) {
   // Client statistics
   const clientStats = await Client.aggregate([
     { $match: { userId: baseQuery.userId } },

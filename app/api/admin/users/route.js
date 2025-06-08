@@ -3,13 +3,12 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../lib/database.js';
 import User from '../../../lib/models/User.js';
 import Invoice from '../../../lib/models/Invoice.js';
-import Payment from '../../../lib/models/Payment.js';
 import { withAuth, withAdmin } from '../../../lib/middleware.js';
 
 // GET - Fetch all users (admin only)
 export async function GET(request) {
   return withAuth(async (request, user) => {
-    return withAdmin(async (request, adminUser) => {
+    return withAdmin(async (request) => {
       try {
         await connectToDatabase();
 

@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../lib/database.js';
 import User from '../../../lib/models/User.js';
-import Invoice from '../../../lib/models/Invoice.js';
 import { withAuth } from '../../../lib/middleware.js';
 import nodemailer from 'nodemailer';
 
@@ -11,7 +10,7 @@ export async function POST(request) {
     try {
       await connectToDatabase();
 
-      const { to, subject, template, templateData, type, invoiceId } = await request.json();
+      const { to, subject, template, templateData } = await request.json();
 
       // Validate required fields
       if (!to || !subject || !template || !templateData) {
@@ -23,15 +22,7 @@ export async function POST(request) {
 
       // Get user details for email templates
       const userData = await User.findById(user.id).select('firstName lastName businessName email').lean();
-      
-      // If invoice email, get invoice details
-      let invoiceData = null;
-      if (invoiceId) {
-        invoiceData = await Invoice.findOne({
-          _id: invoiceId,
-          userId: user.id
-        }).populate('clientId').lean();
-      }      // Email templates with placeholders
+  // Email templates with placeholders
       const emailTemplates = {
         invoice: {
           subject: 'Invoice #{invoiceNumber} from {businessName}',

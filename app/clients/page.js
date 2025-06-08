@@ -7,9 +7,7 @@ import { useToast } from '../components/Utilities/Toast';
 import { clientsAPI } from '../lib/api';
 
 function Clients() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');  const [showAddModal, setShowAddModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [clients, setClients] = useState([]);
   const toast = useToast();
@@ -21,30 +19,25 @@ function Clients() {
     company: '',
     address: '',
     notes: ''
-  });
-  // Load clients from API
+  });  // Load clients from API
   useEffect(() => {
-    loadClients();
-  }, []);
-
-  const loadClients = async () => {
-    try {
-      setIsLoading(true);
-      const data = await clientsAPI.getAll();
-      
-      if (data && data.success) {
-        setClients(data.clients || []);
-      } else {
+    const loadClients = async () => {
+      try {
+        const data = await clientsAPI.getAll();
+        
+        if (data && data.success) {
+          setClients(data.clients || []);
+        } else {
+          toast.error('Failed to load clients');
+        }
+      } catch (error) {
+        console.error('Error loading clients:', error);
         toast.error('Failed to load clients');
       }
-    } catch (error) {
-      console.error('Error loading clients:', error);
-      toast.error('Failed to load clients');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
 
+    loadClients();
+  }, [toast]);
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',

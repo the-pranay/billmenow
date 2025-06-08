@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, User, Building, ArrowRight, Google, Check } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building, ArrowRight, Check } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,9 +28,8 @@ export default function RegisterPage() {
     terms: false,
     privacy: false,
     marketing: false
-  });
-  const [showPassword, setShowPassword] = useState(false);  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { register, loading, error } = useAuth();
+  });  const [showPassword, setShowPassword] = useState(false);  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const { register, loading } = useAuth();
   const router = useRouter();
   const { success, error: showError } = useToast();
 
@@ -58,10 +57,6 @@ export default function RegisterPage() {
     }));
   };
 
-  const handleGoogleSignup = () => {
-    // TODO: Implement Google OAuth
-    console.log('Google signup');
-  };
 
   const validateStep = () => {
     switch (currentStep) {

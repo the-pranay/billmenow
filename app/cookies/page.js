@@ -254,7 +254,7 @@ export default function CookiePolicy() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 We may update this Cookie Policy from time to time to reflect changes in our 
                 practices or applicable laws. We will notify you of significant changes and 
-                update the "Last updated" date at the top of this policy.
+                update the &quot;Last updated&quot; date at the top of this policy.
               </p>
             </section>
 
@@ -267,7 +267,7 @@ export default function CookiePolicy() {
               </p>
               <ul className="list-disc pl-6 text-gray-600 dark:text-gray-400 space-y-2">
                 <li>Email: privacy@billmenow.com</li>
-                <li>Subject: "Cookie Policy Question"</li>
+                <li>Subject: &quot;Cookie Policy Question&quot;</li>
                 <li>Address: BillMeNow Privacy Team, [Your Business Address]</li>
               </ul>
             </section>

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { 
   CreditCard, 
   Smartphone, 
   Building, 
   CheckCircle, 
   XCircle, 
-  Clock, 
   Copy, 
   ExternalLink,
   QrCode,
@@ -16,15 +16,16 @@ import {
   Zap
 } from 'lucide-react';
 import { useToast } from '../Utilities/Toast';
-import { LoadingSpinner, ButtonLoading } from '../Utilities/Loading';
+import { ButtonLoading } from '../Utilities/Loading';
 
 export default function PaymentPage({ invoiceId, amount, clientInfo }) {
   const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [paymentStatus, setPaymentStatus] = useState('pending'); // pending, processing, success, failed
-  const [qrCode, setQrCode] = useState(null);
-  const [upiId, setUpiId] = useState('freelancer@paytm');
+  const [upiId] = useState('freelancer@paytm'); // TODO: Make this configurable
+  const [qrCode, setQrCode] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState(null);
   
   const toast = useToast();
 
@@ -37,25 +38,79 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
     description: 'Website Development Services - Phase 1',
     dueDate: '2024-01-15'
   };
-
   useEffect(() => {
     // Generate QR code for UPI payments
     if (paymentMethod === 'upi') {
-      const upiUrl = `upi://pay?pa=${upiId}&pn=Freelancer&am=${invoiceData.amount}&cu=INR&tn=Invoice-${invoiceData.id}`;
+      const upiUrl = `upi://pay?pa=${upiId}&pn=BillMeNow&am=${invoiceData.amount}&cu=INR&tn=Invoice-${invoiceData.id}`;
       setQrCode(upiUrl);
     }
-  }, [paymentMethod, upiId, invoiceData.amount, invoiceData.id]);  const handleRazorpayPayment = async () => {
+  }, [paymentMethod, upiId, invoiceData.amount, invoiceData.id]);
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
+  // Poll payment status for UPI and bank transfers
+  const startStatusPolling = (paymentId) => {
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/payment/status/${paymentId}`, {
+          headers: {
+            ...(typeof window !== 'undefined' && localStorage.getItem('token') && {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            })
+          }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.status === 'completed') {
+          setPaymentStatus('success');
+          setTransactionId(data.transactionId);
+          setIsProcessing(false);
+          clearInterval(interval);
+          toast.success('Payment completed successfully!');
+        } else if (data.status === 'failed') {
+          setPaymentStatus('failed');
+          setIsProcessing(false);
+          clearInterval(interval);
+          toast.error('Payment failed. Please try again.');
+        }
+      } catch (error) {
+        console.error('Status polling error:', error);
+      }
+    }, 3000); // Poll every 3 seconds
+
+    setPollingInterval(interval);
+    
+    // Stop polling after 10 minutes
+    setTimeout(() => {
+      clearInterval(interval);
+      if (paymentStatus === 'processing') {
+        setPaymentStatus('pending');
+        setIsProcessing(false);
+        toast.warning('Payment verification timed out. Please check your payment status.');
+      }
+    }, 600000);
+  };const handleRazorpayPayment = async () => {
     setPaymentStatus('processing');
     setIsProcessing(true);
     
     try {
-      toast.info('Creating payment order...');
-      
-      // Create order through our API
+      toast.info('Creating payment order...');      // Create order through our API - handle both authenticated and public payments
       const orderResponse = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          // Include auth header if available (for authenticated users)
+          ...(typeof window !== 'undefined' && localStorage.getItem('token') && {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          })
         },
         body: JSON.stringify({
           amount: invoiceData.amount,
@@ -71,7 +126,7 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
       const orderData = await orderResponse.json();
       
       if (!orderData.success) {
-        throw new Error(orderData.message || 'Failed to create order');
+        throw new Error(orderData.error || 'Failed to create order');
       }
 
       toast.success('Payment order created successfully');
@@ -86,13 +141,15 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
         order_id: orderData.order.id,
         handler: async function(response) {
           try {
-            toast.info('Verifying payment...');
-            
-            // Verify payment through our API
+            toast.info('Verifying payment...');            // Verify payment through our API - handle both authenticated and public payments
             const verifyResponse = await fetch('/api/payment/verify', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
+                // Include auth header if available (for authenticated users)
+                ...(typeof window !== 'undefined' && localStorage.getItem('token') && {
+                  'Authorization': `Bearer ${localStorage.getItem('token')}`
+                })
               },
               body: JSON.stringify({
                 razorpay_order_id: response.razorpay_order_id,
@@ -111,7 +168,7 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
               toast.success('Payment completed successfully!');
               console.log('Payment verified successfully:', verifyData);
             } else {
-              throw new Error(verifyData.message || 'Payment verification failed');
+              throw new Error(verifyData.error || 'Payment verification failed');
             }
           } catch (error) {
             console.error('Payment verification error:', error);
@@ -163,20 +220,55 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
       setIsProcessing(false);
       toast.error(`Payment failed: ${error.message}`);
     }
-  };
-  const handleUpiPayment = () => {
+  };  const handleUpiPayment = async () => {
     setPaymentStatus('processing');
     setIsProcessing(true);
     toast.info('Processing UPI payment...');
     
-    // In a real app, you would open UPI app or show QR code
-    // For demo, we'll simulate a successful payment after 3 seconds
-    setTimeout(() => {
-      setTransactionId(`UPI_${Date.now()}`);
-      setPaymentStatus('success');
+    try {
+      // Create UPI payment order
+      const orderResponse = await fetch('/api/payment/create-upi-order', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(typeof window !== 'undefined' && localStorage.getItem('token') && {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          })
+        },
+        body: JSON.stringify({
+          amount: invoiceData.amount,
+          currency: 'INR',
+          invoiceId: invoiceData.id,
+          upiId: upiId,
+          clientInfo: {
+            name: invoiceData.clientName,
+            email: invoiceData.clientEmail
+          }
+        })
+      });
+
+      const orderData = await orderResponse.json();
+      
+      if (!orderData.success) {
+        throw new Error(orderData.error || 'Failed to create UPI order');
+      }
+
+      // Start polling for payment status
+      startStatusPolling(orderData.paymentId);
+      
+      // Try to open UPI app
+      if (qrCode && /Android|iPhone/i.test(navigator.userAgent)) {
+        window.location.href = qrCode;
+      }
+      
+      toast.success('UPI payment initiated. Please complete the payment in your UPI app.');
+      
+    } catch (error) {
+      console.error('UPI payment error:', error);
+      setPaymentStatus('failed');
       setIsProcessing(false);
-      toast.success('UPI payment completed successfully!');
-    }, 3000);
+      toast.error(`UPI payment failed: ${error.message}`);
+    }
   };
 
   const copyUpiId = () => {
@@ -245,7 +337,7 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
             <XCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Payment Failed</h1>
             <p className="text-gray-600 dark:text-gray-300">
-              We couldn't process your payment. Please try again or contact support.
+              We couldn&apos;t process your payment. Please try again or contact support.
             </p>
           </div>
 
@@ -396,28 +488,69 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
                         <Copy className="h-4 w-4" />
                       </button>
                     </div>
-                  </div>
-
-                  {/* QR Code */}
+                  </div>                  {/* QR Code */}
                   <div className="text-center">
                     <div className="inline-block p-4 bg-white dark:bg-slate-700 rounded-lg border border-gray-200 dark:border-slate-600">
-                      <QrCode className="h-32 w-32 text-gray-400 mx-auto" />
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                        Scan with any UPI app
-                      </p>
+                      {qrCode ? (                        <div className="text-center">
+                          <Image 
+                            src={`/api/qr-code?data=${encodeURIComponent(qrCode)}&size=128`}
+                            alt="UPI Payment QR Code"
+                            width={128}
+                            height={128}
+                            className="h-32 w-32 mx-auto border rounded"
+                            onError={(e) => {
+                              // Fallback to external service if our API fails
+                              e.target.src = `https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=${encodeURIComponent(qrCode)}`;
+                            }}
+                          />
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            Scan with any UPI app
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            Amount: ₹{invoiceData.amount.toLocaleString()}
+                          </p>
+                        </div>
+                      ) : (
+                        <div>
+                          <QrCode className="h-32 w-32 text-gray-400 mx-auto animate-pulse" />
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                            Generating QR code...
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  </div>                  <div className="grid grid-cols-2 gap-3">
+                  </div>                  <div className="grid grid-cols-1 gap-3">
                     <ButtonLoading
                       onClick={handleUpiPayment}
                       loading={isProcessing}
-                      className="btn-primary"
+                      className="btn-primary w-full"
                     >
-                      Open UPI App
+                      {isProcessing ? 'Waiting for Payment...' : `Pay ₹${invoiceData.amount.toLocaleString()} via UPI`}
                     </ButtonLoading>
-                    <button className="btn-secondary">
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Pay Online
-                    </button>
+                    
+                    {isProcessing && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                            Waiting for payment confirmation
+                          </span>
+                        </div>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          Complete the payment in your UPI app. This page will update automatically.
+                        </p>
+                      </div>
+                    )}
+
+                    {qrCode && !isProcessing && (
+                      <button 
+                        onClick={() => window.open(qrCode, '_blank')}
+                        className="btn-secondary w-full"
+                      >
+                        <ExternalLink className="h-4 w-4 mr-2" />
+                        Open UPI App
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -452,12 +585,12 @@ export default function PaymentPage({ invoiceId, amount, clientInfo }) {
                       <h3 className="font-medium text-yellow-800 dark:text-yellow-200">Important Note</h3>
                     </div>
                     <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                      Please include Invoice ID "{invoiceData.id}" in the transfer description for faster processing.
+                      Please include Invoice ID &quot;{invoiceData.id}&quot; in the transfer description for faster processing.
                     </p>
                   </div>
 
                   <button className="w-full btn-secondary">
-                    I've Made the Transfer
+                    I&apos;ve Made the Transfer
                   </button>
                 </div>
               )}

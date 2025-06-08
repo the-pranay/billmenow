@@ -23,30 +23,29 @@ function Dashboard() {
   });
 
   const [recentInvoices, setRecentInvoices] = useState([]);
-
   // Load dashboard data from API
   useEffect(() => {
-    loadDashboardData();
-  }, []);
-
-  const loadDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      const data = await dashboardAPI.getStats();
-      
-      if (data && data.success) {
-        setStats(data.stats || {});
-        setRecentInvoices(data.recentInvoices || []);
-      } else {
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        const data = await dashboardAPI.getStats();
+        
+        if (data && data.success) {
+          setStats(data.stats || {});
+          setRecentInvoices(data.recentInvoices || []);
+        } else {
+          toast.error('Failed to load dashboard data');
+        }
+      } catch (error) {
+        console.error('Error loading dashboard data:', error);
         toast.error('Failed to load dashboard data');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      toast.error('Failed to load dashboard data');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };
+
+    loadDashboardData();
+  }, [toast]);
   const getStatusColor = (status) => {
     switch (status) {
       case 'paid':
@@ -78,7 +77,7 @@ function Dashboard() {
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
               <p className="mt-2 text-gray-600 dark:text-gray-400">
-                Welcome back, {user?.firstName || 'User'}! Here's what's happening with your business.
+                Welcome back, {user?.firstName || 'User'}! Here&apos;s what&apos;s happening with your business.
               </p>
             </div>
             <div className="mt-4 sm:mt-0 flex space-x-3">

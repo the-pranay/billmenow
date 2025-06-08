@@ -44,7 +44,7 @@ export const adminMiddleware = async (request) => {
 };
 
 export const withAuth = (handler) => {
-  return async (request, context) => {
+  return async (request) => {
     const authResult = await authMiddleware(request);
     
     if (authResult.error) {

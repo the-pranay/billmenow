@@ -4,6 +4,11 @@ const paymentSchema = new mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
+    required: false  // Made optional for public payments
+  },
+  freelancerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
     required: true
   },
   invoiceId: {
@@ -14,7 +19,7 @@ const paymentSchema = new mongoose.Schema({
   clientId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Client',
-    required: true
+    required: false  // Made optional for public payments
   },
   amount: {
     type: Number,
@@ -32,30 +37,48 @@ const paymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded'],
+    enum: ['pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded', 'authorized'],
     default: 'pending'
   },
   razorpayOrderId: String,
   razorpayPaymentId: String,
   razorpaySignature: String,
   transactionId: String,
+  upiId: String,  // Added for UPI payments
+  clientInfo: {   // Added for public payments
+    name: String,
+    email: String,
+    phone: String
+  },
+  metadata: {     // Added for additional payment data
+    type: mongoose.Schema.Types.Mixed
+  },
   gatewayResponse: {
+    type: mongoose.Schema.Types.Mixed
+  },
+  razorpayResponse: {  // Added for Razorpay webhook data
     type: mongoose.Schema.Types.Mixed
   },
   paymentDate: {
     type: Date,
     default: Date.now
   },
+  capturedAt: Date,    // Added for payment capture time
+  authorizedAt: Date,  // Added for payment authorization time
+  failureReason: String, // Added for failure details
   notes: {
     type: String,
-    trim: true
-  },
+    trim: true  },
+  refundId: String,      // Added for refund tracking
   refundAmount: {
     type: Number,
     default: 0,
     min: 0
   },
+  refundStatus: String,  // Added for refund status
   refundDate: Date,
+  refundedAt: Date,      // Added for refund completion time
+  refundProcessedAt: Date, // Added for refund processing time
   refundReason: String,
   fees: {
     gatewayFee: {

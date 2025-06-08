@@ -131,9 +131,7 @@ Best regards,
 {contactDetails}`
     }
   });
-
   const [previewMode, setPreviewMode] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState('invoice');
 
   const templates = [
     { id: 'invoice', name: 'New Invoice', icon: Mail, color: 'text-blue-600' },
@@ -247,8 +245,7 @@ Best regards,
       // In a real app, you would save to database
       // For now, just simulate saving
       await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Email templates saved successfully');
-    } catch (error) {
+      toast.success('Email templates saved successfully');    } catch {
       toast.error('Failed to save templates');
     } finally {
       setIsLoading(false);

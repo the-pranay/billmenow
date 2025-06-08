@@ -8,8 +8,8 @@ import { withAuth, withAdmin } from '../../../../lib/middleware.js';
 
 // GET - Fetch a specific user (admin only)
 export async function GET(request, { params }) {
-  return withAuth(async (request, user) => {
-    return withAdmin(async (request, adminUser) => {
+  return withAuth(async () => {
+    return withAdmin(async () => {
       try {
         await connectToDatabase();
 
@@ -111,8 +111,8 @@ export async function GET(request, { params }) {
 
 // PUT - Update user (admin only)
 export async function PUT(request, { params }) {
-  return withAuth(async (request, user) => {
-    return withAdmin(async (request, adminUser) => {
+  return withAuth(async () => {
+    return withAdmin(async () => {
       try {
         await connectToDatabase();
 
@@ -179,8 +179,8 @@ export async function PUT(request, { params }) {
 
 // DELETE - Delete user (admin only)
 export async function DELETE(request, { params }) {
-  return withAuth(async (request, user) => {
-    return withAdmin(async (request, adminUser) => {
+  return withAuth(async () => {
+    return withAdmin(async () => {
       try {
         await connectToDatabase();
 

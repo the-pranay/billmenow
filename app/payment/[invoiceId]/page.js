@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import PaymentGateway from '../../components/Payment/PaymentGateway';
 import { LoadingSpinner } from '../../components/Utilities/Loading';
-import { CheckCircle, XCircle, FileText, Calendar, User, Mail, Building, CreditCard } from 'lucide-react';
+import { CheckCircle, XCircle, FileText, User, Mail, Building, CreditCard } from 'lucide-react';
 
 export default function InvoicePaymentPage() {
   const { invoiceId } = useParams();
@@ -12,13 +12,12 @@ export default function InvoicePaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
-
   useEffect(() => {
     if (invoiceId) {
       fetchInvoice();
-    }
-  }, [invoiceId]);
-  const fetchInvoice = async () => {
+    }  }, [invoiceId, fetchInvoice]);
+  
+  const fetchInvoice = useCallback(async () => {
     try {
       setLoading(true);
       // Fetch invoice without authentication (public access)
@@ -37,7 +36,7 @@ export default function InvoicePaymentPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [invoiceId]);
 
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat('en-IN', {
@@ -118,9 +117,7 @@ export default function InvoicePaymentPage() {
           <p className="text-gray-600 dark:text-gray-400">
             Secure payment for Invoice #{invoice.invoiceNumber}
           </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        </div>        <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Invoice Details */}
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-gray-200 dark:border-slate-700 p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6 flex items-center">

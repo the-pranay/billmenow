@@ -2,10 +2,8 @@
 
 import { useState, useRef } from 'react';
 import { 
-  Download, 
-  FileText, 
+  Download,   FileText, 
   Printer, 
-  Share2, 
   Eye, 
   Settings,
   Palette,

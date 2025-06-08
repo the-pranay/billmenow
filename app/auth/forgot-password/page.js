@@ -32,15 +32,14 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900 mb-6">
               <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
             </div>
-            
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Check your email</h2>
+              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Check your email</h2>
             <p className="text-gray-600 dark:text-gray-400 mb-6">
-              We've sent a password reset link to <span className="font-medium text-gray-900 dark:text-white">{email}</span>
+              We&apos;ve sent a password reset link to <span className="font-medium text-gray-900 dark:text-white">{email}</span>
             </p>
             
             <div className="space-y-4">
               <p className="text-sm text-gray-500 dark:text-gray-400">
-                Didn't receive the email? Check your spam folder or
+                Didn&apos;t receive the email? Check your spam folder or
               </p>
               <button
                 onClick={() => setIsSubmitted(false)}
@@ -83,9 +82,8 @@ export default function ForgotPasswordPage() {
                 <span className="text-2xl font-bold text-gray-900 dark:text-white">BillMeNow</span>
               </div>
             </Link>
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Forgot your password?</h2>
-            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-              No worries, we'll send you reset instructions.
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white">Forgot your password?</h2>            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              No worries, we&apos;ll send you reset instructions.
             </p>
           </div>
 

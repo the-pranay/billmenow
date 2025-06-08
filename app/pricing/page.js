@@ -218,7 +218,7 @@ export default function PricingPage() {
                 <div className="space-y-4">
                   <h4 className="font-semibold text-gray-900 dark:text-white flex items-center">
                     <Check className="h-5 w-5 text-green-500 mr-2" />
-                    What's included:
+                    What&apos;s included:
                   </h4>
                   <ul className="space-y-3">
                     {plan.features.map((feature) => (
@@ -302,7 +302,7 @@ export default function PricingPage() {
                 Can I cancel anytime?
               </h4>
               <p className="text-gray-600 dark:text-gray-300 text-sm">
-                Yes, you can cancel your subscription at any time. You'll continue to have access until your billing period ends.
+                Yes, you can cancel your subscription at any time. You&apos;ll continue to have access until your billing period ends.
               </p>
             </div>
           </div>

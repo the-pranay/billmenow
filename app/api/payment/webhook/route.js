@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '../../../lib/database.js';
+import connectDB from '../../../lib/database.js';
 import Invoice from '../../../lib/models/Invoice.js';
 import Payment from '../../../lib/models/Payment.js';
 import User from '../../../lib/models/User.js';
@@ -7,7 +7,7 @@ import crypto from 'crypto';
 
 export async function POST(request) {
   try {
-    await connectToDatabase();
+    await connectDB();
 
     const body = await request.text();
     const signature = request.headers.get('x-razorpay-signature');

@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { Camera, User, Building, Mail, Globe, Upload, Save, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Utilities/Toast';
 import withAuth from '../components/Auth/withAuth';
 
@@ -12,7 +11,6 @@ function ProfilePage() {
   const [activeTab, setActiveTab] = useState('business');
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const { user } = useAuth();
   const { success, error } = useToast();
   const [profileData, setProfileData] = useState({
     // Business Info
@@ -51,57 +49,54 @@ function ProfilePage() {
     razorpaySecret: '',
     upiId: ''
   });
-
   const [logoPreview, setLogoPreview] = useState(null);
 
   // Load profile data on component mount
   useEffect(() => {
-    loadProfileData();
-  }, []);
+    const loadProfileData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/user/profile', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
-  const loadProfileData = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/user/profile', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const data = await response.json();
-      if (data.success && data.user) {
-        const userData = data.user;
-        setProfileData(prev => ({
-          ...prev,
-          // Business Info
-          businessName: userData.businessName || '',
-          businessType: userData.businessType || 'freelancer',
-          ownerName: userData.firstName + (userData.lastName ? ` ${userData.lastName}` : '') || '',
-          email: userData.email || '',
-          phone: userData.phone || '',
-          website: userData.businessDetails?.website || '',
-          
-          // Address
-          address: userData.businessDetails?.address || '',
-          city: userData.businessDetails?.city || '',
-          state: userData.businessDetails?.state || '',
-          zipCode: userData.businessDetails?.zipCode || '',
-          country: userData.country || 'India',
-          
-          // Business Details
-          gstNumber: userData.businessDetails?.taxId || '',
-          panNumber: userData.businessDetails?.panNumber || '',
-          businessDescription: userData.businessDetails?.description || '',
-        }));
+        const data = await response.json();
+        if (data.success && data.user) {
+          const userData = data.user;
+          setProfileData(prev => ({
+            ...prev,
+            // Business Info
+            businessName: userData.businessName || '',
+            businessType: userData.businessType || 'freelancer',
+            ownerName: userData.firstName + (userData.lastName ? ` ${userData.lastName}` : '') || '',
+            email: userData.email || '',
+            phone: userData.phone || '',
+            website: userData.businessDetails?.website || '',
+            
+            // Address
+            address: userData.businessDetails?.address || '',
+            city: userData.businessDetails?.city || '',
+            state: userData.businessDetails?.state || '',
+            zipCode: userData.businessDetails?.zipCode || '',
+            country: userData.country || 'India',
+            
+            // Business Details
+            gstNumber: userData.businessDetails?.taxId || '',
+            panNumber: userData.businessDetails?.panNumber || '',
+            businessDescription: userData.businessDetails?.description || '',
+          }));
+        }
+      } catch (err) {
+        error('Failed to load profile data');
+        console.error('Error loading profile:', err);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      error('Failed to load profile data');
-      console.error('Error loading profile:', err);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    };    loadProfileData();
+  }, [error]);
 
   const handleSave = async () => {
     setIsSaving(true);

@@ -246,10 +246,9 @@ client = BillMeNow::Client.new('YOUR_API_KEY')`
                     Quick Start
                   </h2>
                 </div>
-              </div>
-              <div className="p-6">
+              </div>              <div className="p-6">
                 <p className="text-gray-600 dark:text-gray-300 mb-6">
-                  Get started with the BillMeNow API in minutes. Here's a quick example to create your first invoice.
+                  Get started with the BillMeNow API in minutes. Here&apos;s a quick example to create your first invoice.
                 </p>
                 <div className="relative">
                   <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">

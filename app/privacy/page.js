@@ -111,7 +111,7 @@ export default function PrivacyPolicy() {
               <p className="text-gray-600 dark:text-gray-400 mb-4">
                 We may update this privacy policy from time to time. We will notify you of any 
                 material changes by posting the new policy on this page and updating the 
-                "Last updated" date.
+                &quot;Last updated&quot; date.
               </p>
             </section>
 
