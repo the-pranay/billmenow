@@ -90,9 +90,10 @@ export async function POST(request) {
         clientName: clientInfo?.name || invoice.clientId.name,
         clientEmail: clientInfo?.email || invoice.clientId.email
       }
-    });// Create payment record in database
+    });    // Create payment record in database
     const payment = new Payment({
       userId: user?.id || invoice.userId, // Use invoice's userId if no authenticated user
+      freelancerId: invoice.userId, // The freelancer/user who created the invoice
       invoiceId: invoiceId,
       clientId: invoice.clientId._id || invoice.clientId, // Add required clientId field
       razorpayOrderId: order.id,
@@ -108,11 +109,20 @@ export async function POST(request) {
       paymentId: payment._id,
       keyId: process.env.RAZORPAY_KEY_ID // Use actual Razorpay key
     });
-
   } catch (error) {
     console.error('Order creation error:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', {
+      message: error.message,
+      name: error.name,
+      razorpayKeyId: process.env.RAZORPAY_KEY_ID ? 'Present' : 'Missing',
+      razorpaySecret: process.env.RAZORPAY_KEY_SECRET ? 'Present' : 'Missing'
+    });
     return NextResponse.json(
-      { error: 'Failed to create order' },
+      { 
+        error: 'Failed to create order',
+        details: error.message 
+      },
       { status: 500 }
     );
   }

@@ -12,31 +12,39 @@ export default function InvoicePaymentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isPaid, setIsPaid] = useState(false);
-  
-  const fetchInvoice = useCallback(async () => {
+    const fetchInvoice = useCallback(async () => {
     try {
+      console.log('🔍 fetchInvoice called with invoiceId:', invoiceId);
       setLoading(true);
       // Fetch invoice without authentication (public access)
       const response = await fetch(`/api/invoices/public/${invoiceId}`);
+      console.log('📡 Response status:', response.status);
       const data = await response.json();
+      console.log('📊 Response data:', data);
 
       if (data.success) {
+        console.log('✅ Setting invoice data');
         setInvoice(data.invoice);
         setIsPaid(data.invoice.paymentStatus === 'paid');
       } else {
+        console.log('❌ API error:', data.error);
         setError(data.error || 'Invoice not found');
       }
     } catch (err) {
-      console.error('Error fetching invoice:', err);
+      console.error('❌ Error fetching invoice:', err);
       setError('Failed to load invoice. Please try again.');
     } finally {
+      console.log('🏁 Setting loading to false');
       setLoading(false);
     }
   }, [invoiceId]);
-
   useEffect(() => {
+    console.log('🎯 useEffect triggered with invoiceId:', invoiceId);
     if (invoiceId) {
+      console.log('✅ Invoice ID present, calling fetchInvoice');
       fetchInvoice();
+    } else {
+      console.log('❌ No invoice ID found');
     }
   }, [invoiceId, fetchInvoice]);
 
@@ -54,13 +62,14 @@ export default function InvoicePaymentPage() {
       year: 'numeric'
     });
   };
-
   if (loading) {
+    console.log('🔄 Rendering loading state');
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900">
         <div className="text-center">
           <LoadingSpinner size="lg" />
           <p className="mt-4 text-gray-600 dark:text-gray-400">Loading invoice...</p>
+          <p className="mt-2 text-xs text-gray-500">Debug: invoiceId = {invoiceId}</p>
         </div>
       </div>
     );
@@ -133,10 +142,11 @@ export default function InvoicePaymentPage() {
                 <div>
                   <h3 className="font-semibold text-gray-900 dark:text-white">
                     Invoice #{invoice.invoiceNumber}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    Issue Date: {formatDate(invoice.issueDate)}
-                  </p>
+                  </h3>                  {invoice.date && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      Issue Date: {formatDate(invoice.date)}
+                    </p>
+                  )}
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     Due Date: {formatDate(invoice.dueDate)}
                   </p>
@@ -201,15 +211,18 @@ export default function InvoicePaymentPage() {
                   ))}
                 </div>
               </div>              {/* Totals */}
-              <div className="border-t border-gray-200 dark:border-slate-700 pt-4 space-y-2">
-                <div className="flex justify-between">
+              <div className="border-t border-gray-200 dark:border-slate-700 pt-4 space-y-2">                <div className="flex justify-between">
                   <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
                   <span className="text-gray-900 dark:text-white">{formatCurrency(invoice.subtotal)}</span>
                 </div>
-                {invoice.taxRate > 0 && (
+                {(invoice.taxRate > 0 || (invoice.total > invoice.subtotal)) && (
                   <div className="flex justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">Tax ({invoice.taxRate}%)</span>
-                    <span className="text-gray-900 dark:text-white">{formatCurrency(invoice.tax)}</span>
+                    <span className="text-gray-600 dark:text-gray-400">
+                      Tax {invoice.taxRate ? `(${invoice.taxRate}%)` : '(18%)'}
+                    </span>
+                    <span className="text-gray-900 dark:text-white">
+                      {formatCurrency(invoice.tax || (invoice.total - invoice.subtotal))}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between text-lg font-semibold border-t border-gray-200 dark:border-slate-700 pt-2">

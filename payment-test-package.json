@@ -1,0 +1,6 @@
+{
+  "type": "module",
+  "scripts": {
+    "test-payment": "node --experimental-modules create-payment-test-data.js"
+  }
+}

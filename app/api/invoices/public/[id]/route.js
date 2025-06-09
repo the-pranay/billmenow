@@ -49,11 +49,11 @@ export async function GET(request, { params }) {
       subtotal: invoice.subtotal,
       tax: invoice.tax,
       taxRate: invoice.taxRate,
-      total: invoice.total,
-      notes: invoice.notes,
+      total: invoice.total,      notes: invoice.notes,
       terms: invoice.terms,
       totalPaid,
-      remainingBalance: invoice.total - totalPaid,      payments: payments.map(payment => ({
+      remainingBalance: invoice.total - totalPaid,
+      payments: payments.map(payment => ({
         _id: payment._id,
         amount: payment.amount,
         status: payment.status,
