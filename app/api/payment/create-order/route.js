@@ -26,11 +26,15 @@ export async function POST(request) {
   try {
     console.log('🔍 FULL create-order API called');
     
-    const { amount, currency = 'INR', invoiceId, clientInfo } = await request.json();
+    const requestBody = await request.json();
+    const { amount, currency = 'INR', invoiceId, clientInfo } = requestBody;
     console.log('📊 Received data:', { amount, currency, invoiceId, clientInfo });
+    console.log('📊 Full request body:', requestBody);
+    console.log('📊 Invoice ID type:', typeof invoiceId, 'Length:', invoiceId?.length);
 
     // Basic validation
     if (!amount || !invoiceId) {
+      console.log('❌ Missing required fields - amount:', !!amount, 'invoiceId:', !!invoiceId);
       return NextResponse.json(
         { error: 'Amount and Invoice ID are required' },
         { status: 400 }
@@ -43,13 +47,21 @@ export async function POST(request) {
 
     // Connect to database
     await connectToDatabase();
-    console.log('🔗 Database connected');
-
-    // First, try to find the invoice - check if it's a public payment
+    console.log('🔗 Database connected');    // First, try to find the invoice - check if it's a public payment
+    console.log('🔍 Searching for invoice with ID:', invoiceId);
     const invoice = await Invoice.findById(invoiceId).populate('clientId');
     console.log('📄 Invoice found:', invoice ? 'Yes' : 'No');
+    console.log('📄 Invoice details:', invoice ? {
+      id: invoice._id?.toString(),
+      invoiceNumber: invoice.invoiceNumber,
+      status: invoice.status,
+      paymentStatus: invoice.paymentStatus,
+      total: invoice.total,
+      userId: invoice.userId?.toString()
+    } : 'null');
 
     if (!invoice) {
+      console.log('❌ Invoice not found in database for ID:', invoiceId);
       return NextResponse.json(
         { error: 'Invoice not found' },
         { status: 404 }
