@@ -73,8 +73,17 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
       if (!testOrderResponse.ok) {
         throw new Error(`Create-order test failed: ${testOrderData.error || 'Route not found'}`);
       }
-      
-      // Create order through our API - handle both authenticated and public payments
+        // Create order through our API - handle both authenticated and public payments
+      console.log('📝 Preparing order request with data:', {
+        amount: invoice.total,
+        currency: 'INR',
+        invoiceId: invoice._id,
+        clientInfo: {
+          name: invoice.client?.name,
+          email: invoice.client?.email
+        }
+      });
+
       const orderResponse = await fetch('/api/payment/create-order', {
         method: 'POST',
         headers: {
@@ -95,7 +104,19 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
         })
       });
 
+      console.log('📡 Order API response status:', orderResponse.status);
+      console.log('📡 Order API response headers:', Object.fromEntries(orderResponse.headers.entries()));
+      console.log('📡 Order API response ok:', orderResponse.ok);
+
+      if (!orderResponse.ok) {
+        const errorText = await orderResponse.text();
+        console.error('❌ Order API failed with status:', orderResponse.status);
+        console.error('❌ Order API error response:', errorText);
+        throw new Error(`API request failed: ${orderResponse.status} - ${errorText}`);
+      }
+
       const orderData = await orderResponse.json();
+      console.log('📋 Order API response data:', orderData);
       
       if (!orderData.success) {
         throw new Error(orderData.error || 'Failed to create order');
