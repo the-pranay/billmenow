@@ -2,25 +2,24 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    console.log('🔍 SIMPLE create-order API called');
+    console.log('🔍 BACKUP create-order API called');
     
     const body = await request.json();
     console.log('📊 Received body:', body);
     
-    // Just return success for now to test if route works
     return NextResponse.json({
       success: true,
-      message: 'SIMPLE create-order working - route exists and is accessible!',
+      message: 'BACKUP create-order working - this means the route exists!',
       receivedData: body,
       timestamp: new Date().toISOString()
     });
     
   } catch (error) {
-    console.error('❌ SIMPLE create-order error:', error);
+    console.error('❌ BACKUP create-order error:', error);
     return NextResponse.json({
       success: false,
       error: error.message,
-      message: 'SIMPLE create-order failed but route exists'
+      message: 'BACKUP create-order failed but route exists'
     }, { status: 500 });
   }
 }
@@ -28,6 +27,6 @@ export async function POST(request) {
 export async function GET() {
   return NextResponse.json({
     success: true,
-    message: 'SIMPLE create-order GET working'
+    message: 'BACKUP create-order GET working'
   });
 }

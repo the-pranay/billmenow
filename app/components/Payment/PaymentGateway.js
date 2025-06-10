@@ -54,9 +54,25 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
       if (!testResponse.ok) {
         throw new Error(`Test API failed: ${testData.error || 'Unknown error'}`);
       }
-      
-      // If test works, proceed with actual payment
+        // If test works, proceed with actual payment
       console.log('✅ Test API working, proceeding with payment...');
+      
+      // Test the create-order route first
+      console.log('🔍 Testing create-order route...');
+      const testOrderResponse = await fetch('/api/payment/create-order-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ test: 'create-order-route' })
+      });
+      
+      const testOrderData = await testOrderResponse.json();
+      console.log('🔍 Create-order test response:', testOrderData);
+      
+      if (!testOrderResponse.ok) {
+        throw new Error(`Create-order test failed: ${testOrderData.error || 'Route not found'}`);
+      }
       
       // Create order through our API - handle both authenticated and public payments
       const orderResponse = await fetch('/api/payment/create-order', {
