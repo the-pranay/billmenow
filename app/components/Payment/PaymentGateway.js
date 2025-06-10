@@ -27,13 +27,36 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
     );
   }
   const invoice = invoiceData;
-  
-  const handleRazorpayPayment = async () => {
+    const handleRazorpayPayment = async () => {
     setPaymentStatus('processing');
     setIsProcessing(true);
     
     try {
       toast.info('Creating payment order...');
+      
+      // First test the environment and API connectivity
+      console.log('🧪 Testing API connectivity...');
+      const testResponse = await fetch('/api/payment/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          test: 'connectivity',
+          invoiceId: invoice._id,
+          amount: invoice.total
+        })
+      });
+      
+      const testData = await testResponse.json();
+      console.log('🧪 Test API response:', testData);
+      
+      if (!testResponse.ok) {
+        throw new Error(`Test API failed: ${testData.error || 'Unknown error'}`);
+      }
+      
+      // If test works, proceed with actual payment
+      console.log('✅ Test API working, proceeding with payment...');
       
       // Create order through our API - handle both authenticated and public payments
       const orderResponse = await fetch('/api/payment/create-order', {
