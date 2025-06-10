@@ -26,8 +26,13 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
       </div>
     );
   }
-  const invoice = invoiceData;
-    const handleRazorpayPayment = async () => {
+  const invoice = invoiceData;    const handleRazorpayPayment = async () => {
+    // Prevent duplicate payments
+    if (paymentStatus === 'success') {
+      toast.warning('Payment has already been completed');
+      return;
+    }
+    
     setPaymentStatus('processing');
     setIsProcessing(true);
     
@@ -369,14 +374,15 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
             </div>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Secure payment gateway powered by Razorpay. Supports all major credit/debit cards, net banking, UPI, and digital wallets.
-            </p>
-            <button
+            </p>            <button
               onClick={handleRazorpayPayment}
-              disabled={isProcessing}
+              disabled={isProcessing || paymentStatus === 'success'}
               className="w-full btn-primary"
             >
               {isProcessing ? (
                 <ButtonLoading text="Processing..." />
+              ) : paymentStatus === 'success' ? (
+                "Payment Completed"
               ) : (
                 `Pay ₹${invoice.total.toLocaleString()}`
               )}
