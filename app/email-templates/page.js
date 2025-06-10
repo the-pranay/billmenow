@@ -19,6 +19,7 @@ import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
 import withAuth from '../components/Auth/withAuth';
 import { useToast } from '../components/Utilities/Toast';
+import { apiCall } from '../lib/api';
 
 function EmailTemplatesPage() {
   const { user } = useAuth();
@@ -207,29 +208,22 @@ Best regards,
         daysOverdue: '5',
         paymentDate: '2025-01-10',
         transactionId: 'TXN123456789',
-        lateFee: '₹500'
-      };
+        lateFee: '₹500'      };
 
-      const response = await fetch('/api/email/send', {
+      const data = await apiCall('/api/email/send', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           to: user.email,
           subject: emailContent[activeTemplate].subject,
           template: activeTemplate,
           templateData: sampleData,
-          type: 'test'
-        })
+          type: 'test'        })
       });
 
-      const result = await response.json();
-
-      if (result.success) {
+      if (data && data.success) {
         toast.success(`Test email sent to ${user.email}`);
       } else {
-        throw new Error(result.message || 'Failed to send test email');
+        throw new Error(data?.message || 'Failed to send test email');
       }
     } catch (error) {
       console.error('Test email error:', error);

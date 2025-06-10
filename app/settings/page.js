@@ -25,6 +25,7 @@ import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Utilities/Toast';
 import withAuth from '../components/Auth/withAuth';
+import { apiCall } from '../lib/api';
 
 function SettingsPage() {
   const { user } = useAuth();
@@ -99,19 +100,14 @@ function SettingsPage() {
         html.classList.remove('dark');
       }
     }
-  };
-  const loadSettingsData = useCallback(async () => {
+  };  const loadSettingsData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/user/settings', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const data = await apiCall('/api/user/settings', {
+        method: 'GET'
       });
 
-      const data = await response.json();
-      if (data.success && data.settings) {
+      if (data && data.success && data.settings) {
         setSettings(prev => ({
           ...prev,
           ...data.settings
@@ -126,21 +122,16 @@ function SettingsPage() {
   }, [error]);
 
   const handleSave = async () => {
-    setIsSaving(true);
-    try {
-      const response = await fetch('/api/user/settings', {
+    setIsSaving(true);    try {
+      const data = await apiCall('/api/user/settings', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settings),
+        body: JSON.stringify(settings)
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data && data.success) {
         success('Settings saved successfully!');
       } else {
-        error(data.error || 'Failed to save settings');
+        error(data?.error || 'Failed to save settings');
       }
     } catch (err) {
       error('Failed to save settings');
@@ -176,24 +167,19 @@ function SettingsPage() {
 
   const changePassword = async (currentPassword, newPassword, confirmPassword) => {
     try {
-      setIsLoading(true);
-      const response = await fetch('/api/auth/change-password', {
+      setIsLoading(true);      const data = await apiCall('/api/auth/change-password', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           currentPassword,
           newPassword,
           confirmPassword
-        }),
+        })
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data && data.success) {
         success('Password changed successfully!');
       } else {
-        error(data.error || 'Failed to change password');
+        error(data?.error || 'Failed to change password');
       }
     } catch (err) {
       error('Failed to change password');
@@ -202,14 +188,17 @@ function SettingsPage() {
       setIsLoading(false);
     }
   };
-
   const handleDownloadData = async () => {
     try {
       setIsLoading(true);
+      
+      // For blob responses, we need to use a direct fetch with auth headers
+      const token = localStorage.getItem('token');
       const response = await fetch('/api/user/export-data', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` })
         },
       });
       
@@ -243,27 +232,22 @@ function SettingsPage() {
     }
   };
 
-  const deleteAccount = async (password) => {
-    try {
+  const deleteAccount = async (password) => {    try {
       setIsLoading(true);
-      const response = await fetch('/api/user/delete-account', {
+      const data = await apiCall('/api/user/delete-account', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           confirmPassword: password
-        }),
+        })
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data && data.success) {
         success('Account deleted successfully. Redirecting...');
         setTimeout(() => {
           window.location.href = '/';
         }, 2000);
       } else {
-        error(data.error || 'Failed to delete account');
+        error(data?.error || 'Failed to delete account');
       }
     } catch (err) {
       error('Failed to delete account');
@@ -282,27 +266,22 @@ function SettingsPage() {
       deleteAllData();
     }
   };
-
   const deleteAllData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/user/delete-data', {
+      const data = await apiCall('/api/user/delete-data', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           confirmAction: 'DELETE_ALL_DATA'
-        }),
+        })
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data && data.success) {
         success('All data deleted successfully!');
         // Reload settings to show reset values
         loadSettingsData();
       } else {
-        error(data.error || 'Failed to delete data');
+        error(data?.error || 'Failed to delete data');
       }
     } catch (err) {
       error('Failed to delete data');

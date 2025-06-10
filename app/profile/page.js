@@ -6,6 +6,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '../components/Utilities/Toast';
 import withAuth from '../components/Auth/withAuth';
+import { apiCall } from '../lib/api';
 
 function ProfilePage() {
   const [activeTab, setActiveTab] = useState('business');
@@ -50,21 +51,16 @@ function ProfilePage() {
     upiId: ''
   });
   const [logoPreview, setLogoPreview] = useState(null);
-
   // Load profile data on component mount
   useEffect(() => {
     const loadProfileData = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch('/api/user/profile', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+        const data = await apiCall('/api/user/profile', {
+          method: 'GET'
         });
 
-        const data = await response.json();
-        if (data.success && data.user) {
+        if (data && data.success && data.user) {
           const userData = data.user;
           setProfileData(prev => ({
             ...prev,
@@ -88,6 +84,8 @@ function ProfilePage() {
             panNumber: userData.businessDetails?.panNumber || '',
             businessDescription: userData.businessDetails?.description || '',
           }));
+        } else {
+          error('Failed to load profile data');
         }
       } catch (err) {
         error('Failed to load profile data');
@@ -95,7 +93,7 @@ function ProfilePage() {
       } finally {
         setIsLoading(false);
       }
-    };    loadProfileData();
+    };loadProfileData();
   }, [error]);
 
   const handleSave = async () => {
@@ -125,22 +123,17 @@ function ProfilePage() {
           razorpayKeyId: profileData.razorpayKeyId,
           razorpaySecret: profileData.razorpaySecret,
           upiId: profileData.upiId
-        }
-      };
+        }      };
 
-      const response = await fetch('/api/user/profile', {
+      const data = await apiCall('/api/user/profile', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify(updateData)
       });
 
-      const data = await response.json();
-      if (data.success) {
+      if (data && data.success) {
         success('Profile updated successfully!');
       } else {
-        error(data.error || 'Failed to update profile');
+        error(data?.error || 'Failed to update profile');
       }
     } catch (err) {
       error('Failed to save profile changes');

@@ -91,15 +91,14 @@ function CreateInvoice() {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
-  };
-
-  const generateInvoiceNumber = async () => {
+  };  const generateInvoiceNumber = async () => {
     try {
       // Get next available invoice number from API
       const response = await fetch('/api/invoices/next-number', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
-        },
+          'Content-Type': 'application/json'
+        }
       });
       
       if (response.ok) {
