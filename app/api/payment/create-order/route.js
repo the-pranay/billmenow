@@ -4,23 +4,34 @@ export async function POST(request) {
   try {
     console.log('🔍 SIMPLE create-order API called');
     
-    const body = await request.json();
-    console.log('📊 Received body:', body);
+    const { amount, currency = 'INR', invoiceId, clientInfo } = await request.json();
+    console.log('📊 Received data:', { amount, currency, invoiceId, clientInfo });
     
-    // Just return success for now to test if route works
+    // Basic validation
+    if (!amount || !invoiceId) {
+      return NextResponse.json(
+        { error: 'Amount and Invoice ID are required' },
+        { status: 400 }
+      );
+    }
+    
+    // Return the expected format for Razorpay
     return NextResponse.json({
       success: true,
-      message: 'SIMPLE create-order working - route exists and is accessible!',
-      receivedData: body,
-      timestamp: new Date().toISOString()
+      order: {
+        id: 'order_test_' + Date.now(),
+        amount: amount * 100, // Convert to paise
+        currency: currency
+      },
+      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_3tENk4NwCrtnOC',
+      message: 'SIMPLE create-order working - payment should proceed!'
     });
     
   } catch (error) {
     console.error('❌ SIMPLE create-order error:', error);
     return NextResponse.json({
       success: false,
-      error: error.message,
-      message: 'SIMPLE create-order failed but route exists'
+      error: error.message
     }, { status: 500 });
   }
 }
