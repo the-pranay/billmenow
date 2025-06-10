@@ -69,11 +69,11 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
       
       const testOrderData = await testOrderResponse.json();
       console.log('🔍 Create-order test response:', testOrderData);
-      
-      if (!testOrderResponse.ok) {
+        if (!testOrderResponse.ok) {
         throw new Error(`Create-order test failed: ${testOrderData.error || 'Route not found'}`);
       }
-        // Create order through our API - handle both authenticated and public payments
+      
+      // Create order through our API - handle both authenticated and public payments
       console.log('📝 Preparing order request with data:', {
         amount: invoice.total,
         currency: 'INR',
@@ -84,15 +84,24 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
         }
       });
 
-      const orderResponse = await fetch('/api/payment/create-order', {
+      // Add cache-busting timestamp to avoid 404 cache issues
+      const timestamp = Date.now();
+      const apiUrl = `/api/payment/create-order?t=${timestamp}`;
+      console.log('🔗 Making request to URL:', apiUrl);
+
+      const orderResponse = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
           // Include auth header if available (for authenticated users)
           ...(typeof window !== 'undefined' && localStorage.getItem('token') && {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
           })
         },
+        cache: 'no-cache',
         body: JSON.stringify({
           amount: invoice.total,
           currency: 'INR',
@@ -104,22 +113,71 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
         })
       });
 
-      console.log('📡 Order API response status:', orderResponse.status);
-      console.log('📡 Order API response headers:', Object.fromEntries(orderResponse.headers.entries()));
+      console.log('📡 Order API response status:', orderResponse.status);      console.log('📡 Order API response headers:', Object.fromEntries(orderResponse.headers.entries()));
       console.log('📡 Order API response ok:', orderResponse.ok);
+
+      let orderData;
 
       if (!orderResponse.ok) {
         const errorText = await orderResponse.text();
         console.error('❌ Order API failed with status:', orderResponse.status);
         console.error('❌ Order API error response:', errorText);
-        throw new Error(`API request failed: ${orderResponse.status} - ${errorText}`);
-      }
-
-      const orderData = await orderResponse.json();
-      console.log('📋 Order API response data:', orderData);
-      
-      if (!orderData.success) {
-        throw new Error(orderData.error || 'Failed to create order');
+        
+        // If it's a 404, try one more time with a different URL format
+        if (orderResponse.status === 404) {
+          console.log('🔄 Retrying with absolute URL due to 404...');
+          const retryUrl = `${window.location.origin}/api/payment/create-order?retry=${timestamp}`;
+          
+          const retryResponse = await fetch(retryUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache',
+              'Expires': '0',
+              ...(typeof window !== 'undefined' && localStorage.getItem('token') && {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+              })
+            },
+            cache: 'no-cache',
+            body: JSON.stringify({
+              amount: invoice.total,
+              currency: 'INR',
+              invoiceId: invoice._id,
+              clientInfo: {
+                name: invoice.client?.name,
+                email: invoice.client?.email
+              }
+            })
+          });
+          
+          console.log('🔄 Retry response status:', retryResponse.status);
+          
+          if (retryResponse.ok) {
+            console.log('✅ Retry succeeded');
+            const retryData = await retryResponse.json();
+            console.log('📋 Retry response data:', retryData);
+            
+            if (retryData.success) {
+              // Continue with the retry data
+              orderData = retryData;
+            } else {
+              throw new Error(retryData.error || 'Failed to create order after retry');
+            }
+          } else {
+            const retryErrorText = await retryResponse.text();
+            console.error('❌ Retry also failed:', retryErrorText);
+            throw new Error(`API request failed: ${orderResponse.status} - ${errorText}. Retry failed: ${retryResponse.status} - ${retryErrorText}`);
+          }
+        } else {
+          throw new Error(`API request failed: ${orderResponse.status} - ${errorText}`);
+        }      } else {
+        orderData = await orderResponse.json();
+        console.log('📋 Order API response data:', orderData);
+        
+        if (!orderData.success) {
+          throw new Error(orderData.error || 'Failed to create order');
+        }
       }
 
       toast.success('Payment order created successfully');
