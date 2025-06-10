@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import { connectToDatabase } from './app/lib/database.js';
 import Invoice from './app/lib/models/Invoice.js';
+import Client from './app/lib/models/Client.js';
 
 // Load environment variables
 config({ path: '.env.local' });
