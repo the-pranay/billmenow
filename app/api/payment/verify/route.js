@@ -101,9 +101,8 @@ export async function POST(request) {
       } else {
         invoice.paymentStatus = 'partial';
       }
-      
-      invoice.totalPaid = newTotalPaid;
-      invoice.remainingBalance = Math.max(0, newRemainingBalance);
+        invoice.totalPaid = newTotalPaid;
+      invoice.remainingAmount = Math.max(0, newRemainingBalance);
       
       // Add payment to history
       if (!invoice.payments) {

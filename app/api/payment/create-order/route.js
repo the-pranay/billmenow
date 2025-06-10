@@ -83,10 +83,8 @@ export async function POST(request) {
         { error: 'Invoice is already paid' },
         { status: 400 }
       );
-    }
-
-    // Validate amount matches invoice remaining balance
-    const amountToValidate = invoice.remainingBalance || invoice.total;
+    }    // Validate amount matches invoice remaining balance
+    const amountToValidate = invoice.remainingAmount || invoice.total;
     if (Math.abs(parseFloat(amount) - amountToValidate) > 0.01) {
       return NextResponse.json(
         { error: 'Payment amount does not match invoice balance' },
@@ -104,10 +102,8 @@ export async function POST(request) {
     // Create a short receipt ID (max 40 chars for Razorpay)
     const timestamp = Date.now().toString().slice(-8); // Last 8 digits
     const shortInvoiceId = invoiceId.slice(-8); // Last 8 chars of invoice ID
-    const receipt = `rcpt_${shortInvoiceId}_${timestamp}`;
-
-    const order = await razorpay.orders.create({
-      amount: amount * 100, // Amount in paise
+    const receipt = `rcpt_${shortInvoiceId}_${timestamp}`;    const order = await razorpay.orders.create({
+      amount: Math.round(amount * 100), // Amount in paise (ensure integer)
       currency: currency,
       receipt: receipt,
       notes: {

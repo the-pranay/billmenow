@@ -106,7 +106,7 @@ export async function POST(request) {
     const shortInvoiceId = invoiceId.slice(-8); // Last 8 chars of invoice ID
     const receipt = `rcpt_${shortInvoiceId}_${timestamp}`;    console.log('💳 Creating Razorpay order...');
     const order = await razorpay.orders.create({
-      amount: amount * 100, // Amount in paise
+      amount: Math.round(amount * 100), // Amount in paise (ensure integer)
       currency: currency,
       receipt: receipt,
       notes: {

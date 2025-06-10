@@ -60,22 +60,11 @@ function SettingsPage() {
     lateFeePercentage: '2',
     sendReminders: true,
     reminderDays: ['7', '3', '1'],
-    
-    // Privacy
+      // Privacy
     profileVisibility: 'private',
     analyticsSharing: false,
     dataCollection: 'minimal'
-  });  // Load settings data on component mount
-  useEffect(() => {
-    loadSettingsData();
-  }, [loadSettingsData]);
-
-  // Apply theme changes when theme setting changes
-  useEffect(() => {
-    if (settings.theme) {
-      applyTheme(settings.theme);
-    }
-  }, [settings.theme]);
+  });
 
   const applyTheme = (theme) => {
     const html = document.documentElement;
@@ -100,7 +89,9 @@ function SettingsPage() {
         html.classList.remove('dark');
       }
     }
-  };  const loadSettingsData = useCallback(async () => {
+  };
+
+  const loadSettingsData = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await apiCall('/api/user/settings', {
