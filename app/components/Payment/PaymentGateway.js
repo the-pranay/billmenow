@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useState } from 'react';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -16,21 +15,19 @@ export default function PaymentGateway({ invoiceData, onPaymentSuccess }) {
   const [paymentStatus, setPaymentStatus] = useState('pending'); // pending, processing, success, failed
   const [transactionId, setTransactionId] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+    const toast = useToast();
   
-  const toast = useToast();
+  // Don't use fallback data - wait for real invoice data
+  if (!invoiceData) {
+    return (
+      <div className="text-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-500 dark:text-gray-400">Loading payment information...</p>
+      </div>
+    );
+  }
+  const invoice = invoiceData;
   
-  // Use real invoice data passed as props
-  const invoice = invoiceData || {
-    _id: 'default',
-    total: 25000,
-    remainingBalance: 25000,
-    client: { name: 'Default Client', email: 'client@example.com' },
-    invoiceNumber: 'INV-001',
-    items: []  };
-  
-  // Calculate payment amount (remaining balance if partially paid, otherwise total)
-  const paymentAmount = invoice.remainingBalance > 0 ? invoice.remainingBalance : invoice.total;
-
   const handleRazorpayPayment = async () => {
     setPaymentStatus('processing');
     setIsProcessing(true);

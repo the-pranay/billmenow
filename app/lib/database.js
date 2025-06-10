@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/billmenow';
+// Temporary fix - use Atlas URI directly for deployment
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://Admin:aB9OFzt6p1XhW45S@billmenow.wcieo80.mongodb.net/billmenow';
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');

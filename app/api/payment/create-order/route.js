@@ -14,20 +14,32 @@ async function getUserFromToken(request) {
     
     if (!token) return null;
     
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    return decoded;  } catch {
+    const jwtSecret = process.env.JWT_SECRET || '289e50c62c3c5ecd8aa5c70d532fb708c509d8ada79355186ee177f354fd7a4b1ba9fcd794844f66399a7d7bf4cd9ff6f91f0ee7457dfdcd3588167359ee80be8';
+    const decoded = jwt.verify(token, jwtSecret);
+    return decoded;
+  } catch {
     return null;
   }
 }
 
 export async function POST(request) {
   try {
+    console.log('🔄 Payment API called');
+    console.log('📍 Environment check:', {
+      mongoUri: process.env.MONGODB_URI ? 'Present' : 'Missing',
+      razorpayKey: process.env.RAZORPAY_KEY_ID ? 'Present' : 'Missing',
+      razorpaySecret: process.env.RAZORPAY_KEY_SECRET ? 'Present' : 'Missing'
+    });
+
     await connectToDatabase();
+    console.log('✅ Database connected successfully');
 
     const { amount, currency = 'INR', invoiceId, clientInfo } = await request.json();
+    console.log('📊 Request data:', { amount, currency, invoiceId, clientInfo });
 
     // Basic validation
     if (!amount || !invoiceId) {
+      console.log('❌ Validation failed: Missing amount or invoiceId');
       return NextResponse.json(
         { error: 'Amount and Invoice ID are required' },
         { status: 400 }
@@ -35,17 +47,23 @@ export async function POST(request) {
     }
 
     // Try to get user from token (may be null for public payments)
-    const user = await getUserFromToken(request);
-
-    // First, try to find the invoice - check if it's a public payment
+    const user = await getUserFromToken(request);    // First, try to find the invoice - check if it's a public payment
+    console.log('🔍 Looking for invoice:', invoiceId);
     const invoice = await Invoice.findById(invoiceId).populate('clientId');
 
     if (!invoice) {
+      console.log('❌ Invoice not found in database');
       return NextResponse.json(
         { error: 'Invoice not found' },
         { status: 404 }
       );
     }
+
+    console.log('✅ Invoice found:', {
+      id: invoice._id,
+      total: invoice.total,
+      status: invoice.paymentStatus
+    });
 
     // If user is authenticated, verify they own the invoice
     // If not authenticated, allow if invoice exists (public payment)
@@ -72,14 +90,21 @@ export async function POST(request) {
         { status: 400 }
       );
     }    // Create order with Razorpay
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID || 'rzp_test_3tENk4NwCrtnOC';
+    const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET || 'eMnBFB2AoVi3dOe3P4N55XDX';
+    
+    console.log('🔑 Using Razorpay keys:', {
+      keyId: razorpayKeyId.substring(0, 8) + '...',
+      hasSecret: !!razorpayKeySecret
+    });
+
     const razorpay = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID,
-      key_secret: process.env.RAZORPAY_KEY_SECRET,
-    });    // Create a short receipt ID (max 40 chars for Razorpay)
+      key_id: razorpayKeyId,
+      key_secret: razorpayKeySecret,
+    });// Create a short receipt ID (max 40 chars for Razorpay)
     const timestamp = Date.now().toString().slice(-8); // Last 8 digits
     const shortInvoiceId = invoiceId.slice(-8); // Last 8 chars of invoice ID
-    const receipt = `rcpt_${shortInvoiceId}_${timestamp}`;
-
+    const receipt = `rcpt_${shortInvoiceId}_${timestamp}`;    console.log('💳 Creating Razorpay order...');
     const order = await razorpay.orders.create({
       amount: amount * 100, // Amount in paise
       currency: currency,
@@ -90,7 +115,9 @@ export async function POST(request) {
         clientName: clientInfo?.name || invoice.clientId.name,
         clientEmail: clientInfo?.email || invoice.clientId.email
       }
-    });    // Create payment record in database
+    });
+
+    console.log('✅ Razorpay order created:', order.id);// Create payment record in database
     const payment = new Payment({
       userId: user?.id || invoice.userId, // Use invoice's userId if no authenticated user
       freelancerId: invoice.userId, // The freelancer/user who created the invoice
@@ -107,7 +134,7 @@ export async function POST(request) {
       success: true,
       order: order,
       paymentId: payment._id,
-      keyId: process.env.RAZORPAY_KEY_ID // Use actual Razorpay key
+      keyId: razorpayKeyId // Use the fallback key
     });
   } catch (error) {
     console.error('Order creation error:', error);
