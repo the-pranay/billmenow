@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../lib/database.js';
 import Invoice from '../../../lib/models/Invoice.js';
 import Payment from '../../../lib/models/Payment.js';
-import Client from '../../../lib/models/Client.js';
 import jwt from 'jsonwebtoken';
 import Razorpay from 'razorpay';
 

@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '../../../../lib/database.js';
 import Invoice from '../../../../lib/models/Invoice.js';
-import Client from '../../../../lib/models/Client.js';
 import Payment from '../../../../lib/models/Payment.js';
 
 // GET - Fetch a specific invoice for public access (no authentication required)

@@ -1,6 +1,7 @@
 // API utility functions with authentication
 export const apiCall = async (url, options = {}) => {
-  const token = localStorage.getItem('token');
+  // Only access localStorage on client side
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   
   const defaultOptions = {
     headers: {
@@ -15,17 +16,18 @@ export const apiCall = async (url, options = {}) => {
     console.log(`Making API call to: ${url}`, { options: defaultOptions });
     const response = await fetch(url, defaultOptions);
     console.log(`API response status: ${response.status} for ${url}`);
-    
-    // If response is 401, token might be expired
+      // If response is 401, token might be expired
     if (response.status === 401) {
       console.warn('401 Unauthorized - clearing auth data');
-      // Clear auth data and redirect to login
-      localStorage.removeItem('billmenow_user');
-      localStorage.removeItem('token');
-      document.cookie = 'auth-token=; path=/; max-age=0';
-      
-      // Redirect to login with current page as redirect
-      window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      // Clear auth data and redirect to login (client-side only)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('billmenow_user');
+        localStorage.removeItem('token');
+        document.cookie = 'auth-token=; path=/; max-age=0';
+        
+        // Redirect to login with current page as redirect
+        window.location.href = `/auth/login?redirect=${encodeURIComponent(window.location.pathname)}`;
+      }
       return null;
     }
     

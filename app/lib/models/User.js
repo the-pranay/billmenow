@@ -335,8 +335,7 @@ Best regards,
   timestamps: true
 });
 
-// Index for faster queries
-userSchema.index({ email: 1 });
+// Index for faster queries (email index already created by unique: true)
 userSchema.index({ businessName: 1 });
 userSchema.index({ createdAt: -1 });
 

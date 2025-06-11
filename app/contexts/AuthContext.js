@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useState } from 'react';
 
 // Auth Context
 const AuthContext = createContext();
@@ -78,8 +78,13 @@ function authReducer(state, action) {
 
 // Auth Provider Component
 export function AuthProvider({ children }) {
-  const [state, dispatch] = useReducer(authReducer, initialState);  // Load user from localStorage on mount
+  const [state, dispatch] = useReducer(authReducer, initialState);
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Load user from localStorage on mount (client-side only)
   useEffect(() => {
+    setIsMounted(true);
+    
     const savedUser = localStorage.getItem('billmenow_user');
     const savedToken = localStorage.getItem('token');
     

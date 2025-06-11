@@ -23,6 +23,12 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "BillMeNow - Professional Invoicing Made Easy",
   description: "Create professional invoices and manage your billing with ease. Fast, secure, and designed for modern businesses.",
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon.ico', type: 'image/x-icon' }
+    ],
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -30,7 +36,8 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >        <ErrorBoundary>
+        suppressHydrationWarning={true}
+      ><ErrorBoundary>
           <AuthProvider>
             <ToastProvider>
               <div className="min-h-screen flex flex-col">
