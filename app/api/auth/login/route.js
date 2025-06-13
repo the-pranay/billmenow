@@ -41,9 +41,7 @@ export async function POST(request) {
     await user.save();
 
     // Generate JWT token
-    const token = generateToken({ userId: user._id.toString() });
-
-    // Return user data and token
+    const token = generateToken({ userId: user._id.toString() });    // Return user data and token
     return NextResponse.json({
       success: true,
       token,
@@ -56,6 +54,7 @@ export async function POST(request) {
         businessType: user.businessType,
         phone: user.phone,
         country: user.country,
+        role: user.role || 'user',
         isEmailVerified: user.isEmailVerified,
         subscription: user.subscription,
         preferences: user.preferences

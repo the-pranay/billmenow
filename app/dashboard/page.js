@@ -3,12 +3,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 import withAuth from '../components/Auth/withAuth';
 import { useToast } from '../components/Utilities/Toast';
 import { dashboardAPI } from '../lib/api';
 
 function Dashboard() {
   const { user } = useAuth();
+  const router = useRouter();
   const toast = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -23,8 +25,22 @@ function Dashboard() {
   });
 
   const [recentInvoices, setRecentInvoices] = useState([]);
+
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (user && user.role === 'admin') {
+      router.push('/admin');
+      return;
+    }
+  }, [user, router]);
+
   // Load dashboard data from API
   useEffect(() => {
+    // Don't load data if user is admin (will be redirected)
+    if (user && user.role === 'admin') {
+      return;
+    }
+
     const loadDashboardData = async () => {
       try {
         setIsLoading(true);
@@ -45,7 +61,7 @@ function Dashboard() {
     };
 
     loadDashboardData();
-  }, [toast]);
+  }, [user, toast]);
   const getStatusColor = (status) => {
     switch (status) {
       case 'paid':

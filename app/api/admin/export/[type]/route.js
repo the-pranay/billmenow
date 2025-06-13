@@ -151,7 +151,6 @@ async function exportPayments() {
     .populate('invoiceId', 'invoiceNumber total')
     .sort({ createdAt: -1 })
     .lean();
-
   const csvHeaders = [
     'Payment ID',
     'Transaction ID',
@@ -162,12 +161,11 @@ async function exportPayments() {
     'Currency',
     'Status',
     'Payment Method',
-    'Gateway',
+    'Razorpay Payment ID',
     'Transaction Fee',
     'Created At',
     'Updated At'
   ];
-
   const csvRows = payments.map(payment => [
     payment._id.toString(),
     payment.transactionId || '',
@@ -177,9 +175,9 @@ async function exportPayments() {
     payment.amount || 0,
     payment.currency || 'INR',
     payment.status || '',
-    payment.paymentMethod || '',
-    payment.gateway || '',
-    payment.transactionFee || 0,
+    payment.method || '',
+    payment.razorpayPaymentId || '',
+    payment.fees?.totalFees || 0,
     payment.createdAt ? new Date(payment.createdAt).toISOString().split('T')[0] : '',
     payment.updatedAt ? new Date(payment.updatedAt).toISOString().split('T')[0] : ''
   ]);

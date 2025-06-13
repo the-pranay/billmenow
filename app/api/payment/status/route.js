@@ -20,9 +20,8 @@ export async function GET(request) {
 
     const { searchParams } = new URL(request.url);
     const isAdmin = user.role === 'admin';
-    
-    // Build query based on user role
-    const query = isAdmin ? {} : { userId: user._id };
+      // Build query based on user role - admin sees all, users see only their own
+    const query = user.role === 'admin' ? {} : { userId: user._id };
     
     // Pagination
     const page = parseInt(searchParams.get('page')) || 1;

@@ -15,10 +15,8 @@ export async function GET(request) {
       const limit = parseInt(searchParams.get('limit')) || 10;
       const status = searchParams.get('status') || 'all';
       const clientId = searchParams.get('clientId');
-      const search = searchParams.get('search') || '';
-
-      // Build query
-      const query = { userId: user.id };
+      const search = searchParams.get('search') || '';      // Build query - admin can see all invoices, users only see their own
+      const query = user.role === 'admin' ? {} : { userId: user.id };
       
       if (status !== 'all') {
         query.status = status;
@@ -37,20 +35,18 @@ export async function GET(request) {
       }
 
       // Execute query with pagination
-      const skip = (page - 1) * limit;
-      const invoices = await Invoice.find(query)
+      const skip = (page - 1) * limit;      const invoices = await Invoice.find(query)
         .populate('clientId', 'name email company')
+        .populate('userId', 'firstName lastName email businessName')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .lean();
 
       const totalInvoices = await Invoice.countDocuments(query);
-      const totalPages = Math.ceil(totalInvoices / limit);
-
-      // Calculate summary statistics
+      const totalPages = Math.ceil(totalInvoices / limit);      // Calculate summary statistics - admin sees all, users see only their own
       const summaryStats = await Invoice.aggregate([
-        { $match: { userId: user.id } },
+        { $match: user.role === 'admin' ? {} : { userId: user.id } },
         {
           $group: {
             _id: '$status',
